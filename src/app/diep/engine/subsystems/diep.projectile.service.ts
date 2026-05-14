@@ -1,30 +1,36 @@
 import { Injectable } from '@angular/core';
 import { Bullet, TrailSegment, Player } from '../../core/diep.interfaces';
+import { DiepTimeManager } from '../../core/diep.time-manager';
 
 @Injectable({
     providedIn: 'root'
 })
 export class DiepProjectileService {
-    private lastShotTime = 0;
+    // CHANGE: This is now a counter that resets to 0, not a timestamp.
+    private shotTimer = 0;
 
     /**
-     * Handles the logic for creating a bullet, calculating recoil, 
-     * and managing the player's fire rate cooldown based on frequency.
+     * Handles the logic for creating a bullet.
+     * Added 'ms' parameter to track game-time progression.
      */
     public shootBullet(
         player: Player, 
         mousePos: { x: number; y: number }, 
         mouseAiming: boolean, 
         lastAngle: number, 
-        bullets: Bullet[]
+        bullets: Bullet[],
     ): void {
-        const now = Date.now();
+        // Increment our internal timer by the actual game time that passed
+        this.shotTimer += DiepTimeManager.gameMs;;
         
-        // frequency (shots/sec) to delay (ms) conversion
         const fireDelay = 1000 / player.fireRate;
 
-        if (now - this.lastShotTime < fireDelay) return;
-        this.lastShotTime = now;
+        // Only fire if the accumulated timer exceeds the delay
+        if (this.shotTimer < fireDelay) return;
+        
+        // Subtract fireDelay instead of setting to 0 to preserve "overflow" 
+        // time for a smoother high fire rate.
+        this.shotTimer = 0; 
 
         const angle = mouseAiming 
             ? Math.atan2(mousePos.y - player.y, mousePos.x - player.x) 
@@ -33,11 +39,9 @@ export class DiepProjectileService {
         const barrelLength = player.radius * 2.0;
         const radius = 7.5;
         
-        // Calculate mass and recoil
         const bulletMass = (Math.pow(radius, 2) * Math.PI) * (player.bulletHealth * 0.001);
         const recoilForce = (bulletMass * player.bulletSpeed) / player.mass;
 
-        // Apply recoil to player velocity
         player.vx -= Math.cos(angle) * recoilForce;
         player.vy -= Math.sin(angle) * recoilForce;
 
@@ -60,7 +64,7 @@ export class DiepProjectileService {
     }
 
     public resetCooldown(): void {
-        this.lastShotTime = 0;
+        this.shotTimer = 1000; // Set high so the first shot is always instant
     }
 
     public updateBullets(
@@ -95,16 +99,19 @@ export class DiepProjectileService {
             if (b.isBomb) {
                 return b.timer !== undefined && b.timer > 0;
             }
-            // Filter out dead bullets or those off-screen
             return b.health > 0 && b.x > -100 && b.x < width + 100 && b.y > -100 && b.y < height + 100;
         });
     }
 
+    /**
+     * Handles poison trails.
+     * Changed to use 'ms' (deltaTime) so trails don't disappear while paused.
+     */
     public updateTrails(
         trails: TrailSegment[], 
         bullets: Bullet[], 
         player: Player, 
-        currentTime: number
+        ms: number // Changed from currentTime: number
     ): TrailSegment[] {
         bullets.forEach(bullet => {
             if (bullet.hasTrail) {
@@ -112,20 +119,26 @@ export class DiepProjectileService {
                     x: bullet.x, y: bullet.y,
                     radius: 5, maxRadius: 20,
                     color: '#27ae60', opacity: 0.6,
-                    creationTime: currentTime, lifespan: 1000
+                    // We now store a 'remainingLife' instead of a 'creationTime'
+                    creationTime: 0, 
+                    lifespan: 1000 
                 });
             }
         });
 
         for (let i = trails.length - 1; i >= 0; i--) {
             const t = trails[i];
-            const age = currentTime - t.creationTime;
-            const lifeRatio = age / t.lifespan;
+            
+            // Subtract the elapsed game time from the lifespan
+            t.lifespan -= ms;
 
-            if (age > t.lifespan) {
+            if (t.lifespan <= 0) {
                 trails.splice(i, 1);
                 continue;
             }
+
+            // Calculation based on remaining life
+            const lifeRatio = 1 - (t.lifespan / 1000); 
 
             t.radius = 5 + (t.maxRadius - 5) * lifeRatio;
             t.opacity = 0.6 * (1 - lifeRatio);
@@ -133,8 +146,10 @@ export class DiepProjectileService {
             const dx = player.x - t.x;
             const dy = player.y - t.y;
             const dist = Math.sqrt(dx * dx + dy * dy);
-            if (dist < t.radius + player.radius) {
-                player.health -= 0.04; 
+            
+            // Only damage the player if game is running (ms > 0)
+            if (ms > 0 && dist < t.radius + player.radius) {
+                player.health -= 0.04 * DiepTimeManager.gameTick; 
             }
         }
         return trails;
