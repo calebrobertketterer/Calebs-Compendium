@@ -8,7 +8,6 @@ import { GunnerEnemy } from './green/gunner.enemy';
 import { MotherEnemy } from './purple/mother.enemy';
 import { MinionEnemy } from './purple/minion.enemy';
 import { HealerEnemy } from './healer.enemy';
-import { PuddleEnemy } from './green/puddle.enemy';
 import { HaunterEnemy } from './blue/haunter.enemy';
 import { BomberEnemy } from './orange/bomber.enemy';
 import { BlasterEnemy } from './orange/blaster.enemy';
@@ -35,7 +34,6 @@ export class EnemyRegistry {
     'MOTHER': MotherEnemy,
     'MINION': MinionEnemy,
     'HEALER': HealerEnemy,
-    'PUDDLE': PuddleEnemy,
     'HAUNTER' : HaunterEnemy,
     'BOMBER' : BomberEnemy,
     'BLASTER' : BlasterEnemy,
@@ -99,6 +97,7 @@ export class EnemyRegistry {
     currentTime: number,
     allEnemies: Enemy[] = [] // Optional fallback param so it doesn't break other calling services
   ): void {
+
     const handler = this.getHandler(enemy.type);
     
     handler.update(
