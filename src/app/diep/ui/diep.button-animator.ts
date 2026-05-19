@@ -1,5 +1,4 @@
-// src/app/diep/ui/diep.button-animator.ts
-import { DiepButton } from '../core/diep.interfaces';
+import { DiepTimeManager } from '../core/diep.time-manager';
 
 export class DiepButtonAnimator {
   /**
@@ -25,8 +24,12 @@ export class DiepButtonAnimator {
     const state = this.states.get(id)!;
     const target = isHovered ? 1 : 0;
 
-    // Linear Interpolation: Current + (Target - Current) * Speed
-    state.hover += (target - state.hover) * this.LERP_SPEED;
+    /**
+     * Linear Interpolation: Current + (Target - Current) * Speed
+     * We multiply by DiepTimeManager.uiTick to ensure the animation 
+     * progresses even when the game world is paused or at the game over screen.
+     */
+    state.hover += (target - state.hover) * (this.LERP_SPEED * DiepTimeManager.uiTick);
 
     // Snapping to target to stop unnecessary calculations
     if (Math.abs(state.hover - target) < 0.001) {

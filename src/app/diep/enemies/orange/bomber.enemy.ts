@@ -1,5 +1,6 @@
 import { Enemy, Player, Bullet } from '../../core/diep.interfaces';
 import { DiepPhysics } from '../../core/diep.physics';
+import { DiepTimeManager } from '../../core/diep.time-manager'; // Import the manager
 
 export class BomberEnemy {
     public static metadata = {
@@ -22,9 +23,8 @@ export class BomberEnemy {
             rotationAngle: 0,
             targetX: x, 
             targetY: y,
-            lastShotTime: 0, 
+            lastShotTime: 0,
             spawnTime: 0,
-            // Increased mass multiplier to handle your new player bullet stats
             mass: DiepPhysics.calculateMass(radius, maxHealth) * 2.5 
         };
     }
@@ -37,8 +37,13 @@ export class BomberEnemy {
         moveTowards: Function, 
         bullets: Bullet[]
     ): void {
-        if (deltaTime <= 0) return;
-        if (enemy.lastShotTime === 0) enemy.lastShotTime = currentTime;
+        // Use the manager's pausable time
+        const ms = DiepTimeManager.gameMs;
+        if (ms <= 0 && !(enemy as any).isExploding) return; 
+
+        // Increment accumulators
+        enemy.lastShotTime = (enemy.lastShotTime || 0) + ms;
+        enemy.spawnTime = (enemy.spawnTime || 0) + ms;
 
         const dx = player.x - enemy.x;
         const dy = player.y - enemy.y;
@@ -50,9 +55,11 @@ export class BomberEnemy {
         enemy.x += enemy.vx;
         enemy.y += enemy.vy;
 
-        // AI Target Logic
+        // Targeting Logic - Using the accumulated timer instead of raw timestamps
         const distToTarget = Math.sqrt(Math.pow((enemy.targetX || 0) - enemy.x, 2) + Math.pow((enemy.targetY || 0) - enemy.y, 2));
-        if (distToTarget < 30 || (distToPlayer < 200 && currentTime - (enemy.spawnTime || 0) > 1000) || currentTime - (enemy.spawnTime || 0) > 8000) {
+        
+        // Logic: Change target if reached, or if player is close and 1s passed, or if 8s passed total
+        if (distToTarget < 30 || (distToPlayer < 200 && enemy.spawnTime > 1000) || enemy.spawnTime > 8000) {
             let tx = enemy.x, ty = enemy.y;
             if (distToPlayer < 200) {
                 const angleAway = Math.atan2(enemy.y - player.y, enemy.x - player.x);
@@ -64,15 +71,14 @@ export class BomberEnemy {
             }
             enemy.targetX = Math.max(40, Math.min(760, tx));
             enemy.targetY = Math.max(40, Math.min(560, ty));
-            enemy.spawnTime = currentTime;
+            enemy.spawnTime = 0;
         }
         moveTowards(enemy, deltaTime, enemy.targetX, enemy.targetY, 0.8);
 
-        // --- FIXED SHOOTING LOGIC ---
-        // Only shoot if the bomber is within the screen bounds (800x600)
         const isOnScreen = enemy.x > 0 && enemy.x < 800 && enemy.y > 0 && enemy.y < 600;
 
-        if (isOnScreen && currentTime - (enemy.lastShotTime || 0) > 3500) {
+        // Shooting logic using the accumulator
+        if (isOnScreen && enemy.lastShotTime > 3500) {
             const bulletSpeed = distToPlayer * 0.026;
             
             const newBullet = DiepPhysics.createBullet({
@@ -90,23 +96,26 @@ export class BomberEnemy {
 
             DiepPhysics.applyFiringRecoil(enemy, newBullet, bulletSpeed, enemy.rotationAngle!);
             bullets.push(newBullet);
-            enemy.lastShotTime = currentTime;
+            enemy.lastShotTime = 0; // Reset accumulator
         }
 
-        // --- FIXED BOMB EXPLOSION LOGIC ---
+        // Bomb Explosion logic - also needs to use gameMs so bombs don't explode while paused
         bullets.forEach(b => {
-            if (b.isBomb && b.timer !== undefined && !b.isExploding) {
-                const dP = Math.sqrt(Math.pow(player.x - b.x, 2) + Math.pow(player.y - b.y, 2));
-                
-                // Since bomber only shoots while on screen, we can use a standard edge check
-                const hitWall = b.x < 15 || b.x > 785 || b.y < 15 || b.y > 585;
+            if (b.isBomb && b.timer !== undefined) {
+                if (!b.isExploding) {
+                    b.timer -= ms; // Countdown bomb fuse
+                    const dP = Math.sqrt(Math.pow(player.x - b.x, 2) + Math.pow(player.y - b.y, 2));
+                    const hitWall = b.x < 15 || b.x > 785 || b.y < 15 || b.y > 585;
 
-                if (dP < b.radius + player.radius || hitWall || b.timer <= 1000) {
-                    if (dP < b.radius + player.radius) player.health -= 5;
-                    if (dP < 135 + player.radius) player.health -= 35;
-                    b.isExploding = true;
-                    b.timer = 1000; 
-                    b.dx = 0; b.dy = 0;
+                    if (dP < b.radius + player.radius || hitWall || b.timer <= 1000) {
+                        if (dP < b.radius + player.radius) player.health -= 5;
+                        if (dP < 135 + player.radius) player.health -= 35;
+                        b.isExploding = true;
+                        b.timer = 1000; 
+                        b.dx = 0; b.dy = 0;
+                    }
+                } else {
+                    b.timer -= ms; // Handle the "fade out" of the explosion
                 }
             }
         });
