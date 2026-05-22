@@ -2,7 +2,7 @@ import { EnemyRegistry } from '../../../enemies/enemy.registry';
 import { QuadriviumSorter } from './diep.quadrivium-sorter';
 import { QuadriviumEntryRenderer } from './diep.quadrivium-entry.renderer';
 import { DiepButton } from '../../../core/diep.interfaces';
-import { DiepButtonRenderer } from '../../diep.button-renderer';
+import { DiepButtonRenderer } from '../../buttons/diep.button-renderer';
 
 export class DiepQuadriviumMenu {
   private static rotation = 0;

@@ -3,7 +3,7 @@ import { DiepDynamicTitle } from './diep.dynamic-title';
 import { DiepTipsManager } from './diep.tips-manager';
 import { DiepSettingsManager } from './diep.arena-settings-manager';
 import { DiepArenaCheckboxRenderer } from './diep.arena-checkbox-renderer';
-import { DiepButtonRenderer } from '../diep.button-renderer';
+import { DiepButtonRenderer } from '../buttons/diep.button-renderer';
 
 export class DiepMainMenu {
   public static draw(ctx: CanvasRenderingContext2D, g: any, width: number, height: number): void {

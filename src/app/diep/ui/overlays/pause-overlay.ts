@@ -1,6 +1,6 @@
 import { DiepButton } from '../../core/diep.interfaces';
 import { DiepHighScoreRenderer } from '../hud/diep.high-score-renderer';
-import { DiepButtonRenderer } from '../diep.button-renderer';
+import { DiepButtonRenderer } from '../buttons/diep.button-renderer';
 
 export class DiepPauseOverlay {
   public static draw(ctx: CanvasRenderingContext2D, g: any, width: number, height: number): void {

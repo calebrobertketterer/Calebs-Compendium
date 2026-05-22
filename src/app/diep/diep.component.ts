@@ -5,7 +5,7 @@ import { DiepWorldRenderer } from './ui/diep.arena-renderer';
 import { DiepHudRenderer } from './ui/hud/diep.hud-renderer';
 import { DiepGameEngineService } from './engine/diep.game-engine.service'; 
 import { DiepInputService } from './engine/diep.input.service';
-import { DiepInteractionService } from './ui/diep.interaction.service';
+import { DiepInteractionService } from './ui/buttons/diep.button-interaction.service';
 import { DiepDebugService} from './engine/debug/diep.debug.service';
 
 @Component({

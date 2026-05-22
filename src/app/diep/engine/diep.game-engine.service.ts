@@ -131,7 +131,7 @@ export class DiepGameEngineService {
             }
         }
 
-        const col = this.collisionService.handleCollisions(this.player, this.bullets, this.enemies, (e) => this.killEnemy(e));
+        const col = this.collisionService.handleCollisions(this.player, this.bullets, this.enemies, (e) => this.upgradeService.processKillRewards(this, e));
         this.bullets = col.bullets;
         this.enemies = col.enemies;
 
@@ -154,17 +154,6 @@ export class DiepGameEngineService {
 
     public resetState(startGameImmediately: boolean) {
         this.arenaReset.resetState(this, startGameImmediately);
-    }
-
-    public killEnemy(enemy: Enemy) {
-        this.score += enemy.scoreValue;
-        this.sessionKills++; 
-        this.upgradeService.addXp(this.player.progression, enemy.scoreValue);
-        enemy.onDeath?.(this.enemies, this.spawner, enemy, this.player);
-        enemy.health = 0;
-        const meta = (enemy as any).metadata || {};
-        this.achievementService.incrementKills(enemy.type, meta.faction, this.sessionKills);
-        this.achievementService.updateProgress('SCORE', this.score);
     }
 
     public togglePause() { 
