@@ -32,7 +32,7 @@ export class DiepComponent implements AfterViewInit {
     this.canvasRef.nativeElement.focus(); 
     
     // Ensure the manager knows it should be fading in
-    this.gameEngine.transition.fadeIn();
+    this.gameEngine.arenaReset.transition.fadeIn();
 
     // Start the engine ticker and tell it how to draw
     this.gameEngine.startTicker(() => this.draw());

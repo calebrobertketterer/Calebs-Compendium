@@ -14,7 +14,7 @@ export class DiepHudRenderer {
     // 1. Internal Visibility Check
     if (!g.isGameStarted) return;
 
-    const isOverlayActive = g.isPaused || (g.gameOver && g.deathAnimationTimeStart === null);
+    const isOverlayActive = g.isPaused || (g.gameOver && g.deathAnimation.deathAnimationTimeStart === null);
     const uiTextColor = isOverlayActive ? '#fff' : (g.isDarkMode ? '#ecf0f1' : '#333');
 
     // 2. Draw Sub-modules (Bars and Menus)

@@ -70,14 +70,6 @@ export class DiepGameEngineService {
         this.arenaReset.transition.fadeIn();
     }
 
-    get transition() {
-        return this.arenaReset.transition;
-    }
-
-    get deathAnimationTimeStart() {
-        return this.deathAnimation.deathAnimationTimeStart;
-    }
-
     public startTicker(renderFn: () => void) {
         this.onRenderCallback = renderFn;
         this.lastTime = performance.now();

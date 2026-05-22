@@ -160,7 +160,7 @@ export class DiepAchievementMenu {
         x: width / 2 - 100, y: height - 80, w: 200, h: 50,
         color: '#e74c3c', borderColor: '#c0392b',
         hoverEffect: 'grow',
-        action: () => g.transition.fadeOut(() => g.showingAchievements = false)
+        action: () => g.arenaReset.transition.fadeOut(() => g.showingAchievements = false)
       },
       ...DiepAchievementNavigator.getButtons(g, width)
     ];

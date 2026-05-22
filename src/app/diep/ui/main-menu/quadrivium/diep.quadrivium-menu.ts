@@ -136,7 +136,7 @@ export class DiepQuadriviumMenu {
         x: width / 2 - 100, y: height - 100, w: 200, h: 50,
         color: '#e74c3c', borderColor: '#c0392b',
         hoverEffect: 'grow',
-        action: () => g.transition.fadeOut(() => g.showingQuadrivium = false)
+        action: () => g.arenaReset.transition.fadeOut(() => g.showingQuadrivium = false)
       }
     ];
   }

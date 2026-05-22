@@ -46,7 +46,7 @@ export class DiepInteractionService {
       activeButtons = DiepMainMenu.getButtons(g, width, height);
     } else if (g.isPaused) {
       activeButtons = DiepPauseOverlay.getButtons(g, width, height);
-    } else if (g.gameOver && g.deathAnimationTimeStart === null) {
+    } else if (g.gameOver && g.deathAnimation.deathAnimationTimeStart === null) {
       activeButtons = DiepGameOverOverlay.getButtons(g, width, height);
     }
 
