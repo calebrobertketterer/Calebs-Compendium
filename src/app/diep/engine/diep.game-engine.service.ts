@@ -7,12 +7,12 @@ import { DiepWaveManagerService } from './subsystems/diep.wave-manager';
 import { DiepProjectileService } from './subsystems/diep.projectile.service';
 import { DiepPlayerService } from './subsystems/diep.player.service';
 import { DiepEnemyService } from '../enemies/diep.enemy.service';
-import { TransitionManager } from '../ui/diep.transition-manager';
 import { AchievementService } from '../core/diep.achievement.service';
 import { DiepPlayerUpgradesService } from './subsystems/player-upgrades/diep.player-upgrades.service';
 import { DiepArenaManager } from './subsystems/diep.arena-manager';
 import { DiepFloorDirector } from './subsystems/diep.arena-floor-director.service';
 import { DiepTimeManager } from '../core/diep.time-manager';
+import { DiepArenaResetService } from './subsystems/diep.arena-reset';
 
 @Injectable({ providedIn: 'root' })
 export class DiepGameEngineService {
@@ -25,6 +25,8 @@ export class DiepGameEngineService {
     public keys: { [key: string]: boolean } = {};
     public score = 0;
     public sessionKills = 0; 
+    public showingQuadrivium = false;
+    public showingAchievements = false;
     public gameOver = false;
     public isPaused = false;
     public isDarkMode = true;
@@ -37,13 +39,9 @@ export class DiepGameEngineService {
     public deathAnimationTimeStart: number | null = null;
     public enemiesRemainingForAnimation: Enemy[] = [];
     public topScores: HighScore[] = [];
-    public showingQuadrivium = false;
-    public showingAchievements = false;
 
     public currentDifficulty: DifficultyMode = 'MEDIUM';
     public persistentXp = 0;
-
-    public transition = new TransitionManager();
 
     private animationFrameId: number | null = null;
     private lastTime: number = 0;
@@ -63,11 +61,17 @@ export class DiepGameEngineService {
         private upgradeService: DiepPlayerUpgradesService,
         public arenaManager: DiepArenaManager,
         public hazardDirector: DiepFloorDirector,
+        public arenaReset: DiepArenaResetService
     ) {
         this.player = this.playerService.getDefaultPlayer(this.currentDifficulty, this.persistentXp);
         this.topScores = this.highScoresService.getHighScores();
-        this.transition.fadeIn();
         this.arenaManager.init(this.width, this.height);
+        
+        this.arenaReset.transition.fadeIn();
+    }
+
+    get transition() {
+        return this.arenaReset.transition;
     }
 
     public startTicker(renderFn: () => void) {
@@ -80,112 +84,76 @@ export class DiepGameEngineService {
     }
 
     private ticker = (time: number) => {
-    // 1. Update the central clock
-    // Pauses game logic if the game is paused OR if it's over (and death anim is done)
-    const isLogicPaused = this.isPaused || (this.gameOver && this.deathAnimationTimeStart === null);
-    DiepTimeManager.update(isLogicPaused, time);
+        const isLogicPaused = this.isPaused || (this.gameOver && this.deathAnimationTimeStart === null);
+        DiepTimeManager.update(isLogicPaused, time);
 
-    // 2. Update UI-dependent systems
-    this.transition.update(DiepTimeManager.uiTick * 16.67);
+        this.update();
+        this.onRenderCallback();
 
-    // 3. Update the game world (logic handled by gameTick internally)
-    this.update();
-
-    // 4. Render everything
-    this.onRenderCallback();
-
-    // 5. Keep the heart beating
-    // This is no longer conditionalized so that UI animations (Main Menu, Game Over) always have a clock to listen to.
-    this.animationFrameId = requestAnimationFrame(this.ticker);
-}
-
-    public startGameWithFade() {
-        this.transition.fadeOut(() => {
-            this.resetState(true);
-            this.waveManager.startFirstWave(this.enemies, this.width, this.height);
-        });
-        if (!this.animationFrameId) this.startTicker(this.onRenderCallback);
-    }
-
-    public restartGameWithFade() {
-        this.transition.fadeOut(() => {
-            this.resetState(true);
-            this.waveManager.startFirstWave(this.enemies, this.width, this.height);
-        });
-        if (!this.animationFrameId) this.startTicker(this.onRenderCallback);
-    }
-
-    public returnToMainMenuWithFade() {
-        this.transition.fadeOut(() => {
-            this.resetState(false);
-        });
-        if (!this.animationFrameId) this.startTicker(this.onRenderCallback);
+        this.animationFrameId = requestAnimationFrame(this.ticker);
     }
 
     public update() {
-    // F is our normalized tick (1.0 at 60fps)
-    const F = DiepTimeManager.gameTick;
-    
-    this.arenaManager.update(DiepTimeManager.gameMs);
-    if (this.isGameStarted && !this.isPaused && !this.gameOver) {
-        this.hazardDirector.update(DiepTimeManager.gameMs, this.width, this.height);
-    }
+        const F = DiepTimeManager.gameTick;
+        
+        this.arenaReset.updateTransition();
 
-    if (this.gameOver && this.deathAnimationTimeStart) {
-        this.handleDeathAnimation(Date.now());
-    }
-
-    if (!this.isGameStarted || this.isPaused || this.gameOver) return;
-
-    // 1. Move Player - Replaced deltaTime with 'ms'
-    const playerUpdate = this.playerService.update(this.player, this.keys, this.mousePos, this.mouseAiming, this.width, this.height, F, DiepTimeManager.gameMs);
-    this.lastAngle = playerUpdate.lastAngle;
-    
-    if (this.collisionService.handleEnvironmentCollision(this.player)) {
-        this.handleGameOver();
-        return;
-    }
-
-    // 3. Move Bullets - Replaced deltaTime with 'ms'
-    this.bullets = this.projectileService.updateBullets(this.bullets, F, this.width, this.height, this.player, DiepTimeManager.gameMs);
-    this.bullets.forEach(b => this.collisionService.handleEnvironmentCollision(b, true));
-
-    this.toxicTrails = this.projectileService.updateTrails(this.toxicTrails, this.bullets, this.player, DiepTimeManager.gameMs);
-
-    if (this.mouseAiming && this.mouseDown && this.player.health > 0) {
-        this.shootBullet();
-    }
-
-    // 4. Update Enemies - Replaced deltaTime with 'ms'
-    if (this.player.health > 0) {
-        if (!this.isStartingNewGame) {
-            this.enemyService.updateAI(this.enemies, this.bullets, this.player, DiepTimeManager.gameMs, this.width, this.height);
-            this.enemies.forEach(e => this.collisionService.handleEnvironmentCollision(e));
-        } else {
-            this.isStartingNewGame = false;
+        this.arenaManager.update(DiepTimeManager.gameMs);
+        if (this.isGameStarted && !this.isPaused && !this.gameOver) {
+            this.hazardDirector.update(DiepTimeManager.gameMs, this.width, this.height);
         }
+
+        if (this.gameOver && this.deathAnimationTimeStart) {
+            this.handleDeathAnimation(Date.now());
+        }
+
+        if (!this.isGameStarted || this.isPaused || this.gameOver) return;
+
+        const playerUpdate = this.playerService.update(this.player, this.keys, this.mousePos, this.mouseAiming, this.width, this.height, F, DiepTimeManager.gameMs);
+        this.lastAngle = playerUpdate.lastAngle;
+        
+        if (this.collisionService.handleEnvironmentCollision(this.player)) {
+            this.handleGameOver();
+            return;
+        }
+
+        this.bullets = this.projectileService.updateBullets(this.bullets, F, this.width, this.height, this.player, DiepTimeManager.gameMs);
+        this.bullets.forEach(b => this.collisionService.handleEnvironmentCollision(b, true));
+
+        this.toxicTrails = this.projectileService.updateTrails(this.toxicTrails, this.bullets, this.player, DiepTimeManager.gameMs);
+
+        if (this.mouseAiming && this.mouseDown && this.player.health > 0) {
+            this.shootBullet();
+        }
+
+        if (this.player.health > 0) {
+            if (!this.isStartingNewGame) {
+                this.enemyService.updateAI(this.enemies, this.bullets, this.player, DiepTimeManager.gameMs, this.width, this.height);
+                this.enemies.forEach(e => this.collisionService.handleEnvironmentCollision(e));
+            } else {
+                this.isStartingNewGame = false;
+            }
+        }
+
+        const col = this.collisionService.handleCollisions(this.player, this.bullets, this.enemies, (e) => this.killEnemy(e));
+        this.bullets = col.bullets;
+        this.enemies = col.enemies;
+
+        if (this.player.health <= 0) {
+            this.handleGameOver();
+            return;
+        }
+
+        this.enemies = this.enemyService.cleanup(this.enemies, this.width, this.height);
+        this.waveManager.updateWaves(this.enemies, this.width, this.height);
+        this.achievementService.updateProgress('WAVE', this.waveManager.waveCount);
+        this.player.x = Math.max(this.player.radius, Math.min(this.width - this.player.radius, this.player.x));
+        this.player.y = Math.max(this.player.radius, Math.min(this.height - this.player.radius, this.player.y));
     }
-
-    // 5. Inter-Entity Collisions
-    const col = this.collisionService.handleCollisions(this.player, this.bullets, this.enemies, (e) => this.killEnemy(e));
-    this.bullets = col.bullets;
-    this.enemies = col.enemies;
-
-    if (this.player.health <= 0) {
-        this.handleGameOver();
-        return;
-    }
-
-    this.enemies = this.enemyService.cleanup(this.enemies, this.width, this.height);
-    this.waveManager.updateWaves(this.enemies, this.width, this.height);
-    this.achievementService.updateProgress('WAVE', this.waveManager.waveCount);
-    this.player.x = Math.max(this.player.radius, Math.min(this.width - this.player.radius, this.player.x));
-    this.player.y = Math.max(this.player.radius, Math.min(this.height - this.player.radius, this.player.y));
-}
 
     public shootBullet() {
         if (this.gameOver || this.isPaused || !this.isGameStarted) return;
-        this.projectileService.shootBullet(this.player, this.mousePos, this.mouseAiming, this.lastAngle, this.bullets,);
+        this.projectileService.shootBullet(this.player, this.mousePos, this.mouseAiming, this.lastAngle, this.bullets);
     }
 
     public resetState(startGameImmediately: boolean) {
@@ -204,8 +172,6 @@ export class DiepGameEngineService {
         this.waveManager.reset();
         this.projectileService.resetCooldown();
         this.topScores = this.highScoresService.getHighScores();
-        this.showingQuadrivium = false;
-        this.showingAchievements = false;
         this.arenaManager.init(this.width, this.height);
     }
 

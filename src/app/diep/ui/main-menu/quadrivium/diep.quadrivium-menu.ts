@@ -1,6 +1,6 @@
 import { EnemyRegistry } from '../../../enemies/enemy.registry';
 import { QuadriviumSorter } from './diep.quadrivium-sorter';
-import { QuadriviumEntryRenderer } from './quadrivium-entry.renderer';
+import { QuadriviumEntryRenderer } from './diep.quadrivium-entry.renderer';
 import { DiepButton } from '../../../core/diep.interfaces';
 import { DiepButtonRenderer } from '../../diep.button-renderer';
 

@@ -32,7 +32,7 @@ export class DiepPauseOverlay {
         x: width / 2 - 100, y: height / 2 + 40, w: 200, h: 50,
         color: '#e74c3c', borderColor: '#c0392b',
         hoverEffect: 'grow',
-        action: () => g.returnToMainMenuWithFade()
+        action: () => g.arenaReset.exitToMenu(g)
       },
       {
         id: 'dark-mode-btn',

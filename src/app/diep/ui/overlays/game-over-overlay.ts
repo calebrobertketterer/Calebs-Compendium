@@ -29,7 +29,7 @@ export class DiepGameOverOverlay {
         color: '#2ecc71', borderColor: '#27ae60',
         fontSize: 'bold 30px Inter, sans-serif',
         hoverEffect: 'grow',
-        action: () => g.restartGameWithFade()
+        action: () => g.arenaReset.restartGame(g)
       },
       {
         id: 'main-menu-gameover-btn',
@@ -37,7 +37,7 @@ export class DiepGameOverOverlay {
         x: width / 2 - 100, y: height / 2 + 80, w: 200, h: 50,
         color: '#34495e', borderColor: '#2c3e50',
         hoverEffect: 'grow',
-        action: () => g.returnToMainMenuWithFade()
+        action: () => g.arenaReset.exitToMenu(g)
       }
     ];
   }
