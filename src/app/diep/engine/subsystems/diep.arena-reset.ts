@@ -16,7 +16,7 @@ export class DiepArenaResetService {
 
     public startNewGame(engine: any) {
         this.transition.fadeOut(() => {
-            engine.resetState(true);
+            this.resetState(engine, true);
             engine.waveManager.startFirstWave(engine.enemies, engine.width, engine.height);
         });
         engine.startTicker(engine.onRenderCallback);
@@ -24,7 +24,7 @@ export class DiepArenaResetService {
 
     public restartGame(engine: any) {
         this.transition.fadeOut(() => {
-            engine.resetState(true);
+            this.resetState(engine, true);
             engine.waveManager.startFirstWave(engine.enemies, engine.width, engine.height);
         });
         engine.startTicker(engine.onRenderCallback);
@@ -32,8 +32,32 @@ export class DiepArenaResetService {
 
     public exitToMenu(engine: any) {
         this.transition.fadeOut(() => {
-            engine.resetState(false);
+            this.resetState(engine, false);
         });
         engine.startTicker(engine.onRenderCallback);
+    }
+
+    public resetState(engine: any, startGameImmediately: boolean) {
+        if (engine.player) { 
+            engine.persistentXp = engine.player.progression.totalXpEarned; 
+        }
+        
+        engine.player = engine.playerService.getDefaultPlayer(engine.currentDifficulty, engine.persistentXp);
+        engine.bullets = []; 
+        engine.enemies = []; 
+        engine.toxicTrails = [];
+        engine.score = 0; 
+        engine.sessionKills = 0; 
+        engine.gameOver = false; 
+        engine.isPaused = false;
+        engine.lastAngle = 0; 
+        engine.isGameStarted = startGameImmediately;
+        engine.isStartingNewGame = startGameImmediately;
+        
+        engine.waveManager.reset();
+        engine.projectileService.resetCooldown();
+        engine.topScores = engine.highScoresService.getHighScores();
+        engine.arenaManager.init(engine.width, engine.height);
+        engine.deathAnimation.reset();
     }
 }

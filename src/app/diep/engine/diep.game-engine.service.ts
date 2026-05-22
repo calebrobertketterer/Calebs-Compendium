@@ -13,6 +13,7 @@ import { DiepArenaManager } from './subsystems/diep.arena-manager';
 import { DiepFloorDirector } from './subsystems/diep.arena-floor-director.service';
 import { DiepTimeManager } from '../core/diep.time-manager';
 import { DiepArenaResetService } from './subsystems/diep.arena-reset';
+import { DiepDeathAnimationService } from './subsystems/diep.death-animation.service';
 
 @Injectable({ providedIn: 'root' })
 export class DiepGameEngineService {
@@ -36,8 +37,6 @@ export class DiepGameEngineService {
     public mousePos = { x: 0, y: 0 };
     public mouseDown = false;
     public isGameStarted = false;
-    public deathAnimationTimeStart: number | null = null;
-    public enemiesRemainingForAnimation: Enemy[] = [];
     public topScores: HighScore[] = [];
 
     public currentDifficulty: DifficultyMode = 'MEDIUM';
@@ -45,23 +44,24 @@ export class DiepGameEngineService {
 
     private animationFrameId: number | null = null;
     private lastTime: number = 0;
-    private onRenderCallback: () => void = () => {};
+    public onRenderCallback: () => void = () => {};
 
     public arenaEnabled = true;
 
     constructor(
-        private spawner: EnemySpawnerService,
-        private highScoresService: HighScoresService,
+        public spawner: EnemySpawnerService,
+        public highScoresService: HighScoresService,
         private collisionService: DiepCollisionService,
-        private projectileService: DiepProjectileService,
-        private playerService: DiepPlayerService,
+        public projectileService: DiepProjectileService,
+        public playerService: DiepPlayerService,
         private enemyService: DiepEnemyService,
         public waveManager: DiepWaveManagerService,
         public achievementService: AchievementService,
         private upgradeService: DiepPlayerUpgradesService,
         public arenaManager: DiepArenaManager,
         public hazardDirector: DiepFloorDirector,
-        public arenaReset: DiepArenaResetService
+        public arenaReset: DiepArenaResetService,
+        public deathAnimation: DiepDeathAnimationService
     ) {
         this.player = this.playerService.getDefaultPlayer(this.currentDifficulty, this.persistentXp);
         this.topScores = this.highScoresService.getHighScores();
@@ -74,6 +74,10 @@ export class DiepGameEngineService {
         return this.arenaReset.transition;
     }
 
+    get deathAnimationTimeStart() {
+        return this.deathAnimation.deathAnimationTimeStart;
+    }
+
     public startTicker(renderFn: () => void) {
         this.onRenderCallback = renderFn;
         this.lastTime = performance.now();
@@ -84,7 +88,7 @@ export class DiepGameEngineService {
     }
 
     private ticker = (time: number) => {
-        const isLogicPaused = this.isPaused || (this.gameOver && this.deathAnimationTimeStart === null);
+        const isLogicPaused = this.isPaused || (this.gameOver && this.deathAnimation.deathAnimationTimeStart === null);
         DiepTimeManager.update(isLogicPaused, time);
 
         this.update();
@@ -103,8 +107,8 @@ export class DiepGameEngineService {
             this.hazardDirector.update(DiepTimeManager.gameMs, this.width, this.height);
         }
 
-        if (this.gameOver && this.deathAnimationTimeStart) {
-            this.handleDeathAnimation(Date.now());
+        if (this.gameOver && this.deathAnimation.deathAnimationTimeStart) {
+            this.deathAnimation.handleDeathAnimation(Date.now());
         }
 
         if (!this.isGameStarted || this.isPaused || this.gameOver) return;
@@ -113,7 +117,7 @@ export class DiepGameEngineService {
         this.lastAngle = playerUpdate.lastAngle;
         
         if (this.collisionService.handleEnvironmentCollision(this.player)) {
-            this.handleGameOver();
+            this.deathAnimation.handleGameOver(this);
             return;
         }
 
@@ -140,7 +144,7 @@ export class DiepGameEngineService {
         this.enemies = col.enemies;
 
         if (this.player.health <= 0) {
-            this.handleGameOver();
+            this.deathAnimation.handleGameOver(this);
             return;
         }
 
@@ -157,22 +161,7 @@ export class DiepGameEngineService {
     }
 
     public resetState(startGameImmediately: boolean) {
-        if (this.player) { this.persistentXp = this.player.progression.totalXpEarned; }
-        this.player = this.playerService.getDefaultPlayer(this.currentDifficulty, this.persistentXp);
-        this.bullets = []; 
-        this.enemies = []; 
-        this.toxicTrails = [];
-        this.score = 0; 
-        this.sessionKills = 0; 
-        this.gameOver = false; 
-        this.isPaused = false;
-        this.lastAngle = 0; 
-        this.isGameStarted = startGameImmediately;
-        this.isStartingNewGame = startGameImmediately;
-        this.waveManager.reset();
-        this.projectileService.resetCooldown();
-        this.topScores = this.highScoresService.getHighScores();
-        this.arenaManager.init(this.width, this.height);
+        this.arenaReset.resetState(this, startGameImmediately);
     }
 
     public killEnemy(enemy: Enemy) {
@@ -186,26 +175,6 @@ export class DiepGameEngineService {
         this.achievementService.updateProgress('SCORE', this.score);
     }
 
-    private handleGameOver() {
-        if (this.player.health <= 0 && !this.gameOver) {
-            this.highScoresService.addHighScore(this.score);
-            this.topScores = this.highScoresService.getHighScores();
-            this.player.health = 0;
-            this.gameOver = true;
-            this.deathAnimationTimeStart = Date.now();
-            this.enemiesRemainingForAnimation = [...this.enemies]; 
-            this.enemies = []; 
-        }
-    }
-
-    public handleDeathAnimation(now: number) {
-        if (!this.deathAnimationTimeStart) return;
-        if (now - this.deathAnimationTimeStart >= 1000) {
-            this.enemiesRemainingForAnimation = [];
-            this.deathAnimationTimeStart = null;
-        }
-    }
-
     public togglePause() { 
         if (!this.gameOver && this.isGameStarted) {
             this.isPaused = !this.isPaused;
@@ -217,11 +186,6 @@ export class DiepGameEngineService {
     public toggleDarkMode() { this.isDarkMode = !this.isDarkMode; }
     
     public getVisibleEnemies(): Enemy[] {
-        if (this.gameOver && this.deathAnimationTimeStart !== null) {
-            const timeElapsed = Date.now() - this.deathAnimationTimeStart;
-            const enemiesToDisappear = Math.floor((timeElapsed / 1000) * this.enemiesRemainingForAnimation.length);
-            return this.enemiesRemainingForAnimation.slice(enemiesToDisappear);
-        }
-        return this.enemies;
+        return this.deathAnimation.getVisibleEnemies(this.enemies);
     }
 }
