@@ -3,16 +3,16 @@ import { Player, Bullet, Enemy, HighScore, TrailSegment, DifficultyMode } from '
 import { EnemySpawnerService } from '../enemies/diep.enemy-spawner';
 import { HighScoresService } from '../core/diep.high-scores.service';
 import { DiepCollisionService } from './subsystems/diep.collision.service';
-import { DiepWaveManagerService } from './subsystems/diep.wave-manager';
+import { DiepWaveManagerService } from './subsystems/arena/arena.wave-manager';
 import { DiepProjectileService } from './subsystems/diep.projectile.service';
 import { DiepPlayerService } from './subsystems/diep.player.service';
 import { DiepEnemyService } from '../enemies/diep.enemy.service';
 import { AchievementService } from '../core/diep.achievement.service';
 import { DiepPlayerUpgradesService } from './subsystems/player-upgrades/diep.player-upgrades.service';
-import { DiepArenaManager } from './subsystems/diep.arena-manager';
-import { DiepFloorDirector } from './subsystems/diep.arena-floor-director.service';
+import { DiepArenaManager } from './subsystems/arena/arena.manager';
+import { DiepFloorDirector } from './subsystems/arena/arena.floor-director.service';
 import { DiepTimeManager } from '../core/diep.time-manager';
-import { DiepArenaResetService } from './subsystems/diep.arena-reset';
+import { DiepArenaResetService } from './subsystems/arena/arena.reset';
 import { DiepDeathAnimationService } from './subsystems/diep.death-animation.service';
 
 @Injectable({ providedIn: 'root' })

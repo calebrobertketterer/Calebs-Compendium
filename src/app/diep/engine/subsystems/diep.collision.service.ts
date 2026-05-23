@@ -1,7 +1,7 @@
 import { Injectable } from '@angular/core';
 import { Player, Bullet, Enemy } from '../../core/diep.interfaces';
 import { EnemySpawnerService } from '../../enemies/diep.enemy-spawner';
-import { DiepArenaManager, TileType } from './diep.arena-manager';
+import { DiepArenaManager, TileType } from './arena/arena.manager';
 
 @Injectable({ providedIn: 'root' })
 export class DiepCollisionService {

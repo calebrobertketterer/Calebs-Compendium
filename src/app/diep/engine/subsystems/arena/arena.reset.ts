@@ -1,6 +1,6 @@
 import { Injectable } from '@angular/core';
-import { TransitionManager } from '../../ui/diep.transition-manager';
-import { DiepTimeManager } from '../../core/diep.time-manager';
+import { TransitionManager } from '../../../ui/diep.transition-manager';
+import { DiepTimeManager } from '../../../core/diep.time-manager';
 
 @Injectable({ providedIn: 'root' })
 export class DiepArenaResetService {
