@@ -1,6 +1,6 @@
 import { Player, Enemy, Bullet, TrailSegment } from '../core/diep.interfaces';
 import { EnemyRegistry } from '../enemies/enemy.registry';
-import { DiepBackgroundRenderer } from './diep.background-renderer';
+import { DiepBackgroundRenderer } from './diep.grid-renderer';
 
 export class DiepWorldRenderer {
   /**
