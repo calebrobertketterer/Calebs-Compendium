@@ -3,9 +3,12 @@ import { Enemy, Player, Bullet, EnemyType, GameSystem } from '../core/diep.inter
 import { DiepEnemyLogic } from './diep.enemy-logic';
 import { DiepPhysics } from '../core/diep.physics';
 import { DiepGameEngineService } from '../engine/diep.game-engine.service';
+import { DiepPlayerService } from '../engine/subsystems/diep.player.service';
 
 @Injectable({ providedIn: 'root' })
 export class DiepEnemyService implements GameSystem {
+
+    constructor(private playerService: DiepPlayerService) {}
 
     /**
      * Factory method that applies automatic defaults to ANY enemy.
@@ -39,9 +42,11 @@ export class DiepEnemyService implements GameSystem {
     public update(engine: DiepGameEngineService, tick: number, ms: number): void {
         if (!engine.isGameStarted || engine.isPaused || engine.gameOver) return;
 
-        if (engine.player.health > 0) {
+        const activePlayer = this.playerService.player;
+
+        if (activePlayer.health > 0) {
             if (!engine.isStartingNewGame) {
-                this.updateAI(engine.enemies, engine.bullets, engine.player, ms, engine.width, engine.height);
+                this.updateAI(engine.enemies, engine.bullets, activePlayer, ms, engine.width, engine.height);
             } else {
                 engine.isStartingNewGame = false;
             }

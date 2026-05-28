@@ -1,19 +1,26 @@
 import { Injectable } from '@angular/core';
 import { Enemy } from '../../core/diep.interfaces';
 import { HighScoresService } from '../../core/diep.high-scores.service';
+import { DiepPlayerService } from './diep.player.service';
 
 @Injectable({ providedIn: 'root' })
 export class DiepDeathAnimationService {
   public deathAnimationTimeStart: number | null = null;
   public enemiesRemainingForAnimation: Enemy[] = [];
 
-  constructor(private highScoresService: HighScoresService) {}
+  constructor(
+    private highScoresService: HighScoresService,
+    private playerService: DiepPlayerService
+  ) {}
 
   public handleGameOver(engine: any): void {
-    if (engine.player.health <= 0 && !engine.gameOver) {
+    const player = this.playerService.player;
+    if (!player) return;
+
+    if (player.health <= 0 && !engine.gameOver) {
       this.highScoresService.addHighScore(engine.score);
       engine.topScores = this.highScoresService.getHighScores();
-      engine.player.health = 0;
+      player.health = 0;
       engine.gameOver = true;
       
       this.deathAnimationTimeStart = Date.now();

@@ -7,7 +7,7 @@ export class DiepWorldRenderer {
    * This is the NEW Master Render Call. 
    * It handles the correct layering (Ground -> World -> Walls -> Flying).
    */
-  public static renderWorld(ctx: CanvasRenderingContext2D, g: any, width: number, height: number): void {
+  public static renderWorld(ctx: CanvasRenderingContext2D, g: any, player: Player, width: number, height: number): void {
     const tiles = g.arenaManager?.getAllTiles() || [];
     const tileSize = g.arenaManager?.tileSize || 50;
     const isArenaActive = g.arenaEnabled !== false;
@@ -26,8 +26,8 @@ export class DiepWorldRenderer {
       const visibleEnemies = g.getVisibleEnemies();
       const groundEnemies = visibleEnemies.filter((e: any) => !e.isFlying);
       
-      this.drawEnemiesWithBars(ctx, groundEnemies, g.player, g.bullets);
-      this.drawPlayer(ctx, g.player, g.gameOver);
+      this.drawEnemiesWithBars(ctx, groundEnemies, player, g.bullets);
+      this.drawPlayer(ctx, player, g.gameOver);
       this.drawBullets(ctx, g.bullets);
     }
 
@@ -41,7 +41,7 @@ export class DiepWorldRenderer {
       const visibleEnemies = g.getVisibleEnemies();
       const flyingEnemies = visibleEnemies.filter((e: any) => e.isFlying);
       if (flyingEnemies.length > 0) {
-        this.drawEnemiesWithBars(ctx, flyingEnemies, g.player, g.bullets);
+        this.drawEnemiesWithBars(ctx, flyingEnemies, player, g.bullets);
       }
     }
   }

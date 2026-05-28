@@ -38,11 +38,12 @@ export class DiepArenaResetService {
     }
 
     public resetState(engine: any, startGameImmediately: boolean) {
-        if (engine.player) { 
-            engine.persistentXp = engine.player.progression.totalXpEarned; 
+        const activePlayer = engine.playerService.player;
+        if (activePlayer) { 
+            engine.persistentXp = activePlayer.progression.totalXpEarned; 
         }
         
-        engine.player = engine.playerService.getDefaultPlayer(engine.currentDifficulty, engine.persistentXp);
+        engine.playerService.initializePlayer(engine.currentDifficulty, engine.persistentXp);
         engine.bullets = []; 
         engine.enemies = []; 
         engine.toxicTrails = [];

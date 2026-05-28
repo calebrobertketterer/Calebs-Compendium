@@ -6,6 +6,7 @@ import { DiepAchievementMenu } from '../ui/main-menu/achievements/diep.achieveme
 import { DiepDynamicTitle } from '../ui/main-menu/diep.dynamic-title';
 import { DiepTipsManager } from '../ui/main-menu/diep.tips-manager';
 import { DiepProjectileService } from './subsystems/diep.projectile.service';
+import { DiepPlayerService } from './subsystems/diep.player.service';
 
 @Injectable({
   providedIn: 'root'
@@ -14,7 +15,8 @@ export class DiepInputService {
   constructor(
     private gameEngine: DiepGameEngineService,
     private buttonHandler: DiepInteractionService,
-    private projectileService: DiepProjectileService
+    private projectileService: DiepProjectileService,
+    private playerService: DiepPlayerService
   ) {}
 
   public handleKeyDown(event: KeyboardEvent, drawCallback: () => void, gameLoopCallback: () => void) {
@@ -38,7 +40,8 @@ export class DiepInputService {
 
     if ((key === 'k') && !this.gameEngine.mouseAiming) {
       const g = this.gameEngine;
-      this.projectileService.shootBullet(g.player, g.mousePos, g.mouseAiming, g.lastAngle, g.bullets);
+      const activePlayer = this.playerService.player;
+      this.projectileService.shootBullet(activePlayer, g.mousePos, g.mouseAiming, g.lastAngle, g.bullets);
       event.preventDefault();
     }
 
@@ -113,9 +116,10 @@ export class DiepInputService {
       canvas.focus();
     } else {
       const g = this.gameEngine;
+      const activePlayer = this.playerService.player;
       if (g.mouseAiming && event.button === 0 && !g.isPaused && !g.gameOver && g.isGameStarted) {
         g.mouseDown = true;
-        this.projectileService.shootBullet(g.player, g.mousePos, g.mouseAiming, g.lastAngle, g.bullets);
+        this.projectileService.shootBullet(activePlayer, g.mousePos, g.mouseAiming, g.lastAngle, g.bullets);
       }
     }
   }

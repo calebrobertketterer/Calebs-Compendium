@@ -1,5 +1,5 @@
 import { Injectable } from '@angular/core';
-import { Player, Bullet, Enemy, HighScore, TrailSegment, DifficultyMode, GameSystem } from '../core/diep.interfaces';
+import { Bullet, Enemy, HighScore, TrailSegment, DifficultyMode, GameSystem } from '../core/diep.interfaces';
 import { DiepTimeManager } from '../core/diep.time-manager';
 import { DiepProjectileService } from './subsystems/diep.projectile.service';
 import { DiepCollisionService } from './subsystems/diep.collision.service';
@@ -19,7 +19,6 @@ import { EnemySpawnerService } from '../enemies/diep.enemy-spawner';
 export class DiepGameEngineService {
     public width = 800;
     public height = 600;
-    public player: Player;
     public bullets: Bullet[] = [];
     public enemies: Enemy[] = [];
     public toxicTrails: TrailSegment[] = [];
@@ -65,12 +64,13 @@ export class DiepGameEngineService {
         public arenaReset: DiepArenaResetService,
         public deathAnimation: DiepDeathAnimationService
     ) {
-        this.player = this.playerService.getDefaultPlayer(this.currentDifficulty, this.persistentXp);
+        this.playerService.initializePlayer(this.currentDifficulty, this.persistentXp);
         this.topScores = this.highScoresService.getHighScores();
         this.arenaManager.init(this.width, this.height);
         this.arenaReset.transition.fadeIn();
 
         this.systems = [
+            this.playerService,
             this.projectileService,
             this.collisionService,
             this.enemyService
@@ -101,6 +101,15 @@ export class DiepGameEngineService {
         
         this.arenaReset.updateTransition();
 
+        // 1. Check for immediate game over state BEFORE running system ticks to prevent framing leaks
+        if (this.isGameStarted && !this.isPaused && !this.gameOver) {
+            if (this.playerService.player.health <= 0) {
+                this.deathAnimation.handleGameOver(this);
+                return;
+            }
+        }
+
+        // 2. Process system updates
         for (const system of this.systems) {
             system.update(this, F, DiepTimeManager.gameMs);
         }
@@ -115,10 +124,8 @@ export class DiepGameEngineService {
 
         if (!this.isGameStarted || this.isPaused || this.gameOver) return;
 
-        const playerUpdate = this.playerService.update(this.player, this.keys, this.mousePos, this.mouseAiming, this.width, this.height, F, DiepTimeManager.gameMs);
-        this.lastAngle = playerUpdate.lastAngle;
-
-        if (this.player.health <= 0) {
+        // 3. Secondary catch block if health dropped to zero during the current system frame evaluation
+        if (this.playerService.player.health <= 0) {
             this.deathAnimation.handleGameOver(this);
             return;
         }

@@ -2,6 +2,7 @@ import { Injectable } from '@angular/core';
 import { Bullet, TrailSegment, Player, GameSystem } from '../../core/diep.interfaces';
 import { DiepTimeManager } from '../../core/diep.time-manager';
 import { DiepGameEngineService } from '../diep.game-engine.service';
+import { DiepPlayerService } from './diep.player.service';
 
 @Injectable({
     providedIn: 'root'
@@ -9,10 +10,14 @@ import { DiepGameEngineService } from '../diep.game-engine.service';
 export class DiepProjectileService implements GameSystem {
     private shotTimer = 0;
 
+    constructor(private playerService: DiepPlayerService) {}
+
     public update(engine: DiepGameEngineService, tick: number, ms: number): void {
+        const activePlayer = this.playerService.player;
+
         // Handle automated shooting checking the engine input state directly
-        if (engine.mouseAiming && engine.mouseDown && engine.player && engine.player.health > 0) {
-            this.shootBullet(engine.player, engine.mousePos, engine.mouseAiming, engine.lastAngle, engine.bullets);
+        if (engine.mouseAiming && engine.mouseDown && activePlayer && activePlayer.health > 0) {
+            this.shootBullet(activePlayer, engine.mousePos, engine.mouseAiming, engine.lastAngle, engine.bullets);
         }
 
         engine.bullets = this.updateBullets(
@@ -20,14 +25,14 @@ export class DiepProjectileService implements GameSystem {
             tick, 
             engine.width, 
             engine.height, 
-            engine.player, 
+            activePlayer, 
             ms
         );
 
         engine.toxicTrails = this.updateTrails(
             engine.toxicTrails, 
             engine.bullets, 
-            engine.player, 
+            activePlayer, 
             ms
         );
     }

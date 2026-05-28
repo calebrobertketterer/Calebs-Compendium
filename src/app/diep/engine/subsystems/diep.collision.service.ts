@@ -3,12 +3,14 @@ import { Player, Bullet, Enemy, GameSystem } from '../../core/diep.interfaces';
 import { EnemySpawnerService } from '../../enemies/diep.enemy-spawner';
 import { DiepArenaManager, TileType } from './arena/arena.manager';
 import { DiepGameEngineService } from '../diep.game-engine.service';
+import { DiepPlayerService } from './diep.player.service';
 
 @Injectable({ providedIn: 'root' })
 export class DiepCollisionService implements GameSystem {
     constructor(
         private spawner: EnemySpawnerService,
-        private arenaManager: DiepArenaManager 
+        private arenaManager: DiepArenaManager,
+        private playerService: DiepPlayerService
     ) {}
 
     /**
@@ -16,8 +18,10 @@ export class DiepCollisionService implements GameSystem {
      * Automatically handles both entity environmental boundaries and item/player collisions.
      */
     public update(engine: DiepGameEngineService, tick: number, ms: number): void {
+        const activePlayer = this.playerService.player;
+
         // 1. Check entity collisions against environment tiles
-        this.handleEnvironmentCollision(engine.player);
+        this.handleEnvironmentCollision(activePlayer);
         engine.enemies.forEach(e => this.handleEnvironmentCollision(e));
         
         for (let i = engine.bullets.length - 1; i >= 0; i--) {
@@ -30,16 +34,17 @@ export class DiepCollisionService implements GameSystem {
         if (!engine.isGameStarted || engine.isPaused || engine.gameOver) return;
 
         // Skip calculations if player is dead or game state is initializing
-        if (engine.player.health <= 0 || engine.isStartingNewGame) return;
+        if (activePlayer.health <= 0 || engine.isStartingNewGame) return;
 
         // Process combat/object colliders and mutate collections directly
         const col = this.handleCollisions(
-            engine.player, 
+            activePlayer, 
             engine.bullets, 
             engine.enemies, 
             (e: Enemy) => {
                 if ((engine as any).upgradeService) {
-                    (engine as any).upgradeService.processKillRewards(engine, e);
+                    // FIXED: Explicitly pass down the resolved activePlayer instance here
+                    (engine as any).upgradeService.processKillRewards(engine, e, activePlayer);
                 }
             }
         );
@@ -47,8 +52,8 @@ export class DiepCollisionService implements GameSystem {
         engine.enemies = col.enemies;
 
         // 3. Keep player clamped inside the game simulation viewport canvas boundaries
-        engine.player.x = Math.max(engine.player.radius, Math.min(engine.width - engine.player.radius, engine.player.x));
-        engine.player.y = Math.max(engine.player.radius, Math.min(engine.height - engine.player.radius, engine.player.y));
+        activePlayer.x = Math.max(activePlayer.radius, Math.min(engine.width - activePlayer.radius, activePlayer.x));
+        activePlayer.y = Math.max(activePlayer.radius, Math.min(engine.height - activePlayer.radius, activePlayer.y));
     }
 
     public handleCollisions(

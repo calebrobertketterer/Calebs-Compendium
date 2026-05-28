@@ -14,16 +14,18 @@ export class DiepPlayerUpgradesService {
    * Processes all progression rewards, scoring, callbacks, and achievement mutations
    * associated with a verified enemy kill.
    */
-  public processKillRewards(engine: any, enemy: Enemy): void {
+  public processKillRewards(engine: any, enemy: Enemy, player: Player): void {
     // 1. Accumulate tracking stats directly on the engine instance
     engine.score += enemy.scoreValue;
     engine.sessionKills++;
 
-    // 2. Feed the internal progression metrics
-    this.addXp(engine.player.progression, enemy.scoreValue);
+    // 2. Feed the internal progression metrics safely using the passed player reference
+    if (player && player.progression) {
+      this.addXp(player.progression, enemy.scoreValue);
+    }
 
     // 3. Trigger individual enemy callbacks (like splitting or exploding)
-    enemy.onDeath?.(engine.enemies, engine.spawner, enemy, engine.player);
+    enemy.onDeath?.(engine.enemies, engine.spawner, enemy, player);
     enemy.health = 0;
 
     // 4. Safely broadcast statistics to the achievement systems
