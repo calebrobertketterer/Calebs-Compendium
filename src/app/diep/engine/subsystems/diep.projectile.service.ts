@@ -1,18 +1,37 @@
 import { Injectable } from '@angular/core';
-import { Bullet, TrailSegment, Player } from '../../core/diep.interfaces';
+import { Bullet, TrailSegment, Player, GameSystem } from '../../core/diep.interfaces';
 import { DiepTimeManager } from '../../core/diep.time-manager';
+import { DiepGameEngineService } from '../diep.game-engine.service';
 
 @Injectable({
     providedIn: 'root'
 })
-export class DiepProjectileService {
-    // CHANGE: This is now a counter that resets to 0, not a timestamp.
+export class DiepProjectileService implements GameSystem {
     private shotTimer = 0;
 
-    /**
-     * Handles the logic for creating a bullet.
-     * Added 'ms' parameter to track game-time progression.
-     */
+    public update(engine: DiepGameEngineService, tick: number, ms: number): void {
+        // Handle automated shooting checking the engine input state directly
+        if (engine.mouseAiming && engine.mouseDown && engine.player && engine.player.health > 0) {
+            this.shootBullet(engine.player, engine.mousePos, engine.mouseAiming, engine.lastAngle, engine.bullets);
+        }
+
+        engine.bullets = this.updateBullets(
+            engine.bullets, 
+            tick, 
+            engine.width, 
+            engine.height, 
+            engine.player, 
+            ms
+        );
+
+        engine.toxicTrails = this.updateTrails(
+            engine.toxicTrails, 
+            engine.bullets, 
+            engine.player, 
+            ms
+        );
+    }
+
     public shootBullet(
         player: Player, 
         mousePos: { x: number; y: number }, 
@@ -20,16 +39,12 @@ export class DiepProjectileService {
         lastAngle: number, 
         bullets: Bullet[],
     ): void {
-        // Increment our internal timer by the actual game time that passed
-        this.shotTimer += DiepTimeManager.gameMs;;
+        this.shotTimer += DiepTimeManager.gameMs;
         
         const fireDelay = 1000 / player.fireRate;
 
-        // Only fire if the accumulated timer exceeds the delay
         if (this.shotTimer < fireDelay) return;
         
-        // Subtract fireDelay instead of setting to 0 to preserve "overflow" 
-        // time for a smoother high fire rate.
         this.shotTimer = 0; 
 
         const angle = mouseAiming 
@@ -64,7 +79,7 @@ export class DiepProjectileService {
     }
 
     public resetCooldown(): void {
-        this.shotTimer = 1000; // Set high so the first shot is always instant
+        this.shotTimer = 1000;
     }
 
     public updateBullets(
@@ -103,15 +118,11 @@ export class DiepProjectileService {
         });
     }
 
-    /**
-     * Handles poison trails.
-     * Changed to use 'ms' (deltaTime) so trails don't disappear while paused.
-     */
     public updateTrails(
         trails: TrailSegment[], 
         bullets: Bullet[], 
         player: Player, 
-        ms: number // Changed from currentTime: number
+        ms: number
     ): TrailSegment[] {
         bullets.forEach(bullet => {
             if (bullet.hasTrail) {
@@ -119,7 +130,6 @@ export class DiepProjectileService {
                     x: bullet.x, y: bullet.y,
                     radius: 5, maxRadius: 20,
                     color: '#27ae60', opacity: 0.6,
-                    // We now store a 'remainingLife' instead of a 'creationTime'
                     creationTime: 0, 
                     lifespan: 1000 
                 });
@@ -128,8 +138,6 @@ export class DiepProjectileService {
 
         for (let i = trails.length - 1; i >= 0; i--) {
             const t = trails[i];
-            
-            // Subtract the elapsed game time from the lifespan
             t.lifespan -= ms;
 
             if (t.lifespan <= 0) {
@@ -137,7 +145,6 @@ export class DiepProjectileService {
                 continue;
             }
 
-            // Calculation based on remaining life
             const lifeRatio = 1 - (t.lifespan / 1000); 
 
             t.radius = 5 + (t.maxRadius - 5) * lifeRatio;
@@ -147,7 +154,6 @@ export class DiepProjectileService {
             const dy = player.y - t.y;
             const dist = Math.sqrt(dx * dx + dy * dy);
             
-            // Only damage the player if game is running (ms > 0)
             if (ms > 0 && dist < t.radius + player.radius) {
                 player.health -= 0.04 * DiepTimeManager.gameTick; 
             }

@@ -165,3 +165,7 @@ export interface Achievement {
   faction?: 'Red' | 'Orange' | 'Yellow' | 'Green' | 'Blue' | 'Purple';
   isSingleGame?: boolean;
 }
+
+export interface GameSystem {
+  update(engine: any, tick: number, ms: number): void;
+}

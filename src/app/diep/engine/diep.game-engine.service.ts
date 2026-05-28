@@ -1,19 +1,19 @@
 import { Injectable } from '@angular/core';
-import { Player, Bullet, Enemy, HighScore, TrailSegment, DifficultyMode } from '../core/diep.interfaces';
-import { EnemySpawnerService } from '../enemies/diep.enemy-spawner';
-import { HighScoresService } from '../core/diep.high-scores.service';
-import { DiepCollisionService } from './subsystems/diep.collision.service';
-import { DiepWaveManagerService } from './subsystems/arena/arena.wave-manager';
+import { Player, Bullet, Enemy, HighScore, TrailSegment, DifficultyMode, GameSystem } from '../core/diep.interfaces';
+import { DiepTimeManager } from '../core/diep.time-manager';
 import { DiepProjectileService } from './subsystems/diep.projectile.service';
+import { DiepCollisionService } from './subsystems/diep.collision.service';
 import { DiepPlayerService } from './subsystems/diep.player.service';
 import { DiepEnemyService } from '../enemies/diep.enemy.service';
-import { AchievementService } from '../core/diep.achievement.service';
-import { DiepPlayerUpgradesService } from './subsystems/player-upgrades/diep.player-upgrades.service';
+import { DiepWaveManagerService } from './subsystems/arena/arena.wave-manager';
 import { DiepArenaManager } from './subsystems/arena/arena.manager';
 import { DiepFloorDirector } from './subsystems/arena/arena.floor-director.service';
-import { DiepTimeManager } from '../core/diep.time-manager';
-import { DiepArenaResetService } from './subsystems/arena/arena.reset';
 import { DiepDeathAnimationService } from './subsystems/diep.death-animation.service';
+import { DiepArenaResetService } from './subsystems/arena/arena.reset';
+import { DiepPlayerUpgradesService } from './subsystems/player-upgrades/diep.player-upgrades.service';
+import { AchievementService } from '../core/diep.achievement.service';
+import { HighScoresService } from '../core/diep.high-scores.service';
+import { EnemySpawnerService } from '../enemies/diep.enemy-spawner';
 
 @Injectable({ providedIn: 'root' })
 export class DiepGameEngineService {
@@ -48,13 +48,15 @@ export class DiepGameEngineService {
 
     public arenaEnabled = true;
 
+    private systems: GameSystem[] = [];
+
     constructor(
         public spawner: EnemySpawnerService,
         public highScoresService: HighScoresService,
-        private collisionService: DiepCollisionService,
         public projectileService: DiepProjectileService,
         public playerService: DiepPlayerService,
-        private enemyService: DiepEnemyService,
+        public collisionService: DiepCollisionService,
+        public enemyService: DiepEnemyService,
         public waveManager: DiepWaveManagerService,
         public achievementService: AchievementService,
         private upgradeService: DiepPlayerUpgradesService,
@@ -66,8 +68,11 @@ export class DiepGameEngineService {
         this.player = this.playerService.getDefaultPlayer(this.currentDifficulty, this.persistentXp);
         this.topScores = this.highScoresService.getHighScores();
         this.arenaManager.init(this.width, this.height);
-        
         this.arenaReset.transition.fadeIn();
+
+        this.systems = [
+            this.projectileService
+        ];
     }
 
     public startTicker(renderFn: () => void) {
@@ -94,7 +99,10 @@ export class DiepGameEngineService {
         
         this.arenaReset.updateTransition();
 
-        this.arenaManager.update(DiepTimeManager.gameMs);
+        for (const system of this.systems) {
+            system.update(this, F, DiepTimeManager.gameMs);
+        }
+
         if (this.isGameStarted && !this.isPaused && !this.gameOver) {
             this.hazardDirector.update(DiepTimeManager.gameMs, this.width, this.height);
         }
@@ -113,15 +121,6 @@ export class DiepGameEngineService {
             return;
         }
 
-        this.bullets = this.projectileService.updateBullets(this.bullets, F, this.width, this.height, this.player, DiepTimeManager.gameMs);
-        this.bullets.forEach(b => this.collisionService.handleEnvironmentCollision(b, true));
-
-        this.toxicTrails = this.projectileService.updateTrails(this.toxicTrails, this.bullets, this.player, DiepTimeManager.gameMs);
-
-        if (this.mouseAiming && this.mouseDown && this.player.health > 0) {
-            this.shootBullet();
-        }
-
         if (this.player.health > 0) {
             if (!this.isStartingNewGame) {
                 this.enemyService.updateAI(this.enemies, this.bullets, this.player, DiepTimeManager.gameMs, this.width, this.height);
@@ -131,7 +130,7 @@ export class DiepGameEngineService {
             }
         }
 
-        const col = this.collisionService.handleCollisions(this.player, this.bullets, this.enemies, (e) => this.upgradeService.processKillRewards(this, e));
+        const col = this.collisionService.handleCollisions(this.player, this.bullets, this.enemies, (e: Enemy) => this.upgradeService.processKillRewards(this, e));
         this.bullets = col.bullets;
         this.enemies = col.enemies;
 
@@ -145,11 +144,6 @@ export class DiepGameEngineService {
         this.achievementService.updateProgress('WAVE', this.waveManager.waveCount);
         this.player.x = Math.max(this.player.radius, Math.min(this.width - this.player.radius, this.player.x));
         this.player.y = Math.max(this.player.radius, Math.min(this.height - this.player.radius, this.player.y));
-    }
-
-    public shootBullet() {
-        if (this.gameOver || this.isPaused || !this.isGameStarted) return;
-        this.projectileService.shootBullet(this.player, this.mousePos, this.mouseAiming, this.lastAngle, this.bullets);
     }
 
     public resetState(startGameImmediately: boolean) {
