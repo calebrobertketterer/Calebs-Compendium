@@ -72,7 +72,8 @@ export class DiepGameEngineService {
 
         this.systems = [
             this.projectileService,
-            this.collisionService
+            this.collisionService,
+            this.enemyService
         ];
     }
 
@@ -117,20 +118,11 @@ export class DiepGameEngineService {
         const playerUpdate = this.playerService.update(this.player, this.keys, this.mousePos, this.mouseAiming, this.width, this.height, F, DiepTimeManager.gameMs);
         this.lastAngle = playerUpdate.lastAngle;
 
-        if (this.player.health > 0) {
-            if (!this.isStartingNewGame) {
-                this.enemyService.updateAI(this.enemies, this.bullets, this.player, DiepTimeManager.gameMs, this.width, this.height);
-            } else {
-                this.isStartingNewGame = false;
-            }
-        }
-
         if (this.player.health <= 0) {
             this.deathAnimation.handleGameOver(this);
             return;
         }
 
-        this.enemies = this.enemyService.cleanup(this.enemies, this.width, this.height);
         this.waveManager.updateWaves(this.enemies, this.width, this.height);
         this.achievementService.updateProgress('WAVE', this.waveManager.waveCount);
     }

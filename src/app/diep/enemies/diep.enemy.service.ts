@@ -1,10 +1,11 @@
 import { Injectable } from '@angular/core';
-import { Enemy, Player, Bullet, EnemyType } from '../core/diep.interfaces';
+import { Enemy, Player, Bullet, EnemyType, GameSystem } from '../core/diep.interfaces';
 import { DiepEnemyLogic } from './diep.enemy-logic';
 import { DiepPhysics } from '../core/diep.physics';
+import { DiepGameEngineService } from '../engine/diep.game-engine.service';
 
 @Injectable({ providedIn: 'root' })
-export class DiepEnemyService {
+export class DiepEnemyService implements GameSystem {
 
     /**
      * Factory method that applies automatic defaults to ANY enemy.
@@ -29,6 +30,24 @@ export class DiepEnemyService {
         }
 
         return enemy;
+    }
+
+    /**
+     * Implementation of GameSystem interface.
+     * Manages AI ticks, simulation states, and edge boundary array cleanup.
+     */
+    public update(engine: DiepGameEngineService, tick: number, ms: number): void {
+        if (!engine.isGameStarted || engine.isPaused || engine.gameOver) return;
+
+        if (engine.player.health > 0) {
+            if (!engine.isStartingNewGame) {
+                this.updateAI(engine.enemies, engine.bullets, engine.player, ms, engine.width, engine.height);
+            } else {
+                engine.isStartingNewGame = false;
+            }
+        }
+
+        engine.enemies = this.cleanup(engine.enemies, engine.width, engine.height);
     }
 
     public updateAI(enemies: Enemy[], bullets: Bullet[], player: Player, deltaTime: number, width: number, height: number) {
