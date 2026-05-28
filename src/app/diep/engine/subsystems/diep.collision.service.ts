@@ -1,14 +1,55 @@
 import { Injectable } from '@angular/core';
-import { Player, Bullet, Enemy } from '../../core/diep.interfaces';
+import { Player, Bullet, Enemy, GameSystem } from '../../core/diep.interfaces';
 import { EnemySpawnerService } from '../../enemies/diep.enemy-spawner';
 import { DiepArenaManager, TileType } from './arena/arena.manager';
+import { DiepGameEngineService } from '../diep.game-engine.service';
 
 @Injectable({ providedIn: 'root' })
-export class DiepCollisionService {
+export class DiepCollisionService implements GameSystem {
     constructor(
         private spawner: EnemySpawnerService,
         private arenaManager: DiepArenaManager 
     ) {}
+
+    /**
+     * Implementation of GameSystem interface.
+     * Automatically handles both entity environmental boundaries and item/player collisions.
+     */
+    public update(engine: DiepGameEngineService, tick: number, ms: number): void {
+        // 1. Check entity collisions against environment tiles
+        this.handleEnvironmentCollision(engine.player);
+        engine.enemies.forEach(e => this.handleEnvironmentCollision(e));
+        
+        for (let i = engine.bullets.length - 1; i >= 0; i--) {
+            if (this.handleEnvironmentCollision(engine.bullets[i], true)) {
+                engine.bullets.splice(i, 1);
+            }
+        }
+
+        // 2. Run object interaction layers if gameplay is active
+        if (!engine.isGameStarted || engine.isPaused || engine.gameOver) return;
+
+        // Skip calculations if player is dead or game state is initializing
+        if (engine.player.health <= 0 || engine.isStartingNewGame) return;
+
+        // Process combat/object colliders and mutate collections directly
+        const col = this.handleCollisions(
+            engine.player, 
+            engine.bullets, 
+            engine.enemies, 
+            (e: Enemy) => {
+                if ((engine as any).upgradeService) {
+                    (engine as any).upgradeService.processKillRewards(engine, e);
+                }
+            }
+        );
+        engine.bullets = col.bullets;
+        engine.enemies = col.enemies;
+
+        // 3. Keep player clamped inside the game simulation viewport canvas boundaries
+        engine.player.x = Math.max(engine.player.radius, Math.min(engine.width - engine.player.radius, engine.player.x));
+        engine.player.y = Math.max(engine.player.radius, Math.min(engine.height - engine.player.radius, engine.player.y));
+    }
 
     public handleCollisions(
         player: Player,
@@ -16,15 +57,6 @@ export class DiepCollisionService {
         enemies: Enemy[],
         onKillEnemy: (enemy: Enemy) => void
     ) {
-        this.handleEnvironmentCollision(player);
-        enemies.forEach(e => this.handleEnvironmentCollision(e));
-        
-        for (let i = bullets.length - 1; i >= 0; i--) {
-            if (this.handleEnvironmentCollision(bullets[i], true)) {
-                bullets.splice(i, 1);
-            }
-        }
-
         this.handleBulletVsBullet(bullets);
 
         bullets.forEach(bullet => {
@@ -94,7 +126,6 @@ export class DiepCollisionService {
     }
 
     public handleEnvironmentCollision(entity: any, isBullet: boolean = false): boolean {
-        // GHOSTS bypass all environment collisions entirely
         if (entity.isGhost) return false;
 
         const tileSize = this.arenaManager.tileSize;
@@ -114,7 +145,6 @@ export class DiepCollisionService {
                 const tile = this.arenaManager.getTileAt(gx * tileSize + 1, gy * tileSize + 1);
                 if (!tile) continue;
 
-                // 1. HOLE LOGIC: isFlying objects ignore holes. Everyone else dies.
                 if (tile.type === TileType.HOLE && tile.transition > 0.8 && !entity.isFlying) {
                     const centerTile = this.arenaManager.getTileAt(entity.x, entity.y);
                     if (centerTile === tile) {
@@ -123,7 +153,6 @@ export class DiepCollisionService {
                     }
                 }
 
-                // 2. WALL LOGIC: Both normal AND isFlying objects hit walls.
                 const wallThreshold = isBullet ? 0.2 : 0.5;
                 if (tile.type === TileType.WALL && tile.transition > wallThreshold) {
                     if (isBullet) {

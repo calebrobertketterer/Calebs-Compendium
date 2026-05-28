@@ -71,7 +71,8 @@ export class DiepGameEngineService {
         this.arenaReset.transition.fadeIn();
 
         this.systems = [
-            this.projectileService
+            this.projectileService,
+            this.collisionService
         ];
     }
 
@@ -115,24 +116,14 @@ export class DiepGameEngineService {
 
         const playerUpdate = this.playerService.update(this.player, this.keys, this.mousePos, this.mouseAiming, this.width, this.height, F, DiepTimeManager.gameMs);
         this.lastAngle = playerUpdate.lastAngle;
-        
-        if (this.collisionService.handleEnvironmentCollision(this.player)) {
-            this.deathAnimation.handleGameOver(this);
-            return;
-        }
 
         if (this.player.health > 0) {
             if (!this.isStartingNewGame) {
                 this.enemyService.updateAI(this.enemies, this.bullets, this.player, DiepTimeManager.gameMs, this.width, this.height);
-                this.enemies.forEach(e => this.collisionService.handleEnvironmentCollision(e));
             } else {
                 this.isStartingNewGame = false;
             }
         }
-
-        const col = this.collisionService.handleCollisions(this.player, this.bullets, this.enemies, (e: Enemy) => this.upgradeService.processKillRewards(this, e));
-        this.bullets = col.bullets;
-        this.enemies = col.enemies;
 
         if (this.player.health <= 0) {
             this.deathAnimation.handleGameOver(this);
@@ -142,8 +133,6 @@ export class DiepGameEngineService {
         this.enemies = this.enemyService.cleanup(this.enemies, this.width, this.height);
         this.waveManager.updateWaves(this.enemies, this.width, this.height);
         this.achievementService.updateProgress('WAVE', this.waveManager.waveCount);
-        this.player.x = Math.max(this.player.radius, Math.min(this.width - this.player.radius, this.player.x));
-        this.player.y = Math.max(this.player.radius, Math.min(this.height - this.player.radius, this.player.y));
     }
 
     public resetState(startGameImmediately: boolean) {
