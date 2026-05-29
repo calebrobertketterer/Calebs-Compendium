@@ -69,11 +69,13 @@ export class DiepGameEngineService {
         this.arenaManager.init(this.width, this.height);
         this.arenaReset.transition.fadeIn();
 
+        // DeathAnimation runs as an independent loop subsystem to clean up calculations and check state
         this.systems = [
             this.playerService,
             this.projectileService,
             this.collisionService,
-            this.enemyService
+            this.enemyService,
+            this.deathAnimation
         ];
     }
 
@@ -101,37 +103,17 @@ export class DiepGameEngineService {
         
         this.arenaReset.updateTransition();
 
-        // 1. Check for immediate game over state BEFORE running system ticks to prevent framing leaks
-        if (this.isGameStarted && !this.isPaused && !this.gameOver) {
-            if (this.playerService.player.health <= 0) {
-                this.deathAnimation.handleGameOver(this);
-                return;
-            }
-        }
-
-        // 2. Process system updates
+        // 1. Process standard modular systems sequentially
         for (const system of this.systems) {
             system.update(this, F, DiepTimeManager.gameMs);
         }
 
+        // 2. Handle active game session step evaluations post-system ticks
         if (this.isGameStarted && !this.isPaused && !this.gameOver) {
             this.hazardDirector.update(DiepTimeManager.gameMs, this.width, this.height);
+            this.waveManager.updateWaves(this.enemies, this.width, this.height);
+            this.achievementService.updateProgress('WAVE', this.waveManager.waveCount);
         }
-
-        if (this.gameOver && this.deathAnimation.deathAnimationTimeStart) {
-            this.deathAnimation.handleDeathAnimation(Date.now());
-        }
-
-        if (!this.isGameStarted || this.isPaused || this.gameOver) return;
-
-        // 3. Secondary catch block if health dropped to zero during the current system frame evaluation
-        if (this.playerService.player.health <= 0) {
-            this.deathAnimation.handleGameOver(this);
-            return;
-        }
-
-        this.waveManager.updateWaves(this.enemies, this.width, this.height);
-        this.achievementService.updateProgress('WAVE', this.waveManager.waveCount);
     }
 
     public resetState(startGameImmediately: boolean) {

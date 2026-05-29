@@ -11,6 +11,13 @@ export class DiepPlayerService implements GameSystem {
     constructor(private upgradeService: DiepPlayerUpgradesService) {}
 
     /**
+     * Clean encapsulation getter to monitor player death without leaking health logic checks.
+     */
+    public get isPlayerDead(): boolean {
+        return this.player ? this.player.health <= 0 : false;
+    }
+
+    /**
      * Initializes the internal player entity state.
      */
     public initializePlayer(difficulty: DifficultyMode = 'MEDIUM', carryOverXp: number = 0): void {
