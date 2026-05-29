@@ -69,7 +69,6 @@ export class DiepGameEngineService {
         this.arenaManager.init(this.width, this.height);
         this.arenaReset.transition.fadeIn();
 
-        // DeathAnimation runs as an independent loop subsystem to clean up calculations and check state
         this.systems = [
             this.playerService,
             this.projectileService,
@@ -116,10 +115,6 @@ export class DiepGameEngineService {
         }
     }
 
-    public resetState(startGameImmediately: boolean) {
-        this.arenaReset.resetState(this, startGameImmediately);
-    }
-
     public togglePause() { 
         if (!this.gameOver && this.isGameStarted) {
             this.isPaused = !this.isPaused;
@@ -129,8 +124,4 @@ export class DiepGameEngineService {
     }
 
     public toggleDarkMode() { this.isDarkMode = !this.isDarkMode; }
-    
-    public getVisibleEnemies(): Enemy[] {
-        return this.deathAnimation.getVisibleEnemies(this.enemies);
-    }
 }

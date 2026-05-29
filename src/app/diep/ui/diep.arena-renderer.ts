@@ -23,7 +23,8 @@ export class DiepWorldRenderer {
     if (g.isGameStarted || g.gameOver) {
       this.drawToxicTrails(ctx, g.toxicTrails);
       
-      const visibleEnemies = g.getVisibleEnemies();
+      // FIXED: Call the function directly from the injected engine service reference instance
+      const visibleEnemies = g.deathAnimation.getVisibleEnemies(g.enemies);
       const groundEnemies = visibleEnemies.filter((e: any) => !e.isFlying);
       
       this.drawEnemiesWithBars(ctx, groundEnemies, player, g.bullets);
@@ -38,7 +39,7 @@ export class DiepWorldRenderer {
 
     // 4. Layer: Flying Entities (Drawn over walls)
     if (g.isGameStarted || g.gameOver) {
-      const visibleEnemies = g.getVisibleEnemies();
+      const visibleEnemies = g.deathAnimation.getVisibleEnemies(g.enemies);
       const flyingEnemies = visibleEnemies.filter((e: any) => e.isFlying);
       if (flyingEnemies.length > 0) {
         this.drawEnemiesWithBars(ctx, flyingEnemies, player, g.bullets);
