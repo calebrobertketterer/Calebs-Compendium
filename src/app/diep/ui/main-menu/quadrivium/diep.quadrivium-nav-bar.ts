@@ -2,7 +2,7 @@
 import { DiepButton } from '../../../core/diep.interfaces';
 
 export class DiepQuadriviumNavigator {
-  public static tabs = ['BESTIARY', 'DOSSIER', 'RECORDS'];
+  public static tabs = ['MORPHOLOGY', 'DOSSIER', 'RECORDS'];
   public static activeTabIndex = 0;
 
   private static tabSpacing = 140;

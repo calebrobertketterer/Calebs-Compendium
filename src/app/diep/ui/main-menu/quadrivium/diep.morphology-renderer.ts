@@ -1,7 +1,41 @@
+// src/app/diep/ui/main-menu/quadrivium/diep.morphology-renderer.ts
 import { EnemyRegistry } from '../../../enemies/enemy.registry';
 import { EnemyType } from '../../../core/diep.interfaces';
 
-export class QuadriviumEntryRenderer {
+export class DiepMorphologyRenderer {
+
+  /**
+   * Orchestrates and renders the complete multi-column Morphology shape catalog grid.
+   */
+  public static drawGrid(
+    ctx: CanvasRenderingContext2D,
+    sortedTypes: EnemyType[],
+    width: number,
+    height: number,
+    startY: number,
+    currentScrollOffset: number,
+    rotation: number
+  ): void {
+    const colCount = 2;
+    const rowSpacing = 110;
+    const colWidth = (width - 120) / colCount;
+
+    sortedTypes.forEach((type, index) => {
+      const col = index % colCount;
+      const row = Math.floor(index / colCount);
+      const x = 60 + (col * colWidth);
+      const y = 140 + currentScrollOffset + (row * rowSpacing);
+
+      // Culling optimization: Skip drawing rows that are completely out of view
+      if (y < startY - 150 || y > height + 150) return;
+      
+      this.drawEntry(ctx, type, x, y, colWidth - 20, rotation);
+    });
+  }
+
+  /**
+   * Renders an individual geometric entity structural profile frame.
+   */
   public static drawEntry(ctx: CanvasRenderingContext2D, type: EnemyType, x: number, y: number, w: number, rotation: number): void {
     const meta = EnemyRegistry.getMetadata(type);
     const defaultStats = EnemyRegistry.getDefaultStats(type);

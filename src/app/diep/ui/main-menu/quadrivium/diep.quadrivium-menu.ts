@@ -1,9 +1,9 @@
 // src/app/diep/ui/main-menu/quadrivium/diep.quadrivium-menu.ts
 import { EnemyRegistry } from '../../../enemies/enemy.registry';
-import { QuadriviumSorter } from './diep.quadrivium-sorter';
-import { QuadriviumEntryRenderer } from './diep.quadrivium-entry.renderer';
+import { DiepMorphologySorter } from './diep.morphology-sorter';
+import { DiepMorphologyRenderer } from './diep.morphology-renderer';
 import { DiepQuadriviumNavigator } from './diep.quadrivium-nav-bar';
-import { QuadriviumStatsPanelRenderer } from './diep.quadrivium.stats-renderer';
+import { QuadriviumStatsPanelRenderer } from './diep.records-renderer';
 import { DiepButton } from '../../../core/diep.interfaces';
 import { DiepButtonRenderer } from '../../buttons/diep.button-renderer';
 
@@ -22,15 +22,15 @@ export class DiepQuadriviumMenu {
     ctx.fillRect(0, 0, width, height);
 
     const currentTab = DiepQuadriviumNavigator.tabs[DiepQuadriviumNavigator.activeTabIndex];
-
     const rawTypes = EnemyRegistry.getRegisteredTypes();
-    const sortedTypes = QuadriviumSorter.sortEnemies(rawTypes);
+    const sortedTypes = DiepMorphologySorter.sortEnemies(rawTypes);
 
     const startY = 80;
     const viewHeight = height - startY - 0; 
     let contentHeight = 0;
 
-    if (currentTab === 'BESTIARY') {
+    // Dynamically query boundaries based on context mapping configurations
+    if (currentTab === 'MORPHOLOGY') {
       const colCount = 2;
       const rowSpacing = 110;
       const totalRows = Math.ceil(sortedTypes.length / colCount);
@@ -63,6 +63,7 @@ export class DiepQuadriviumMenu {
       if (displayOffset > 0) displayOffset -= totalHeight;
     }
 
+    // Clip rendering visual view bounding box
     ctx.save();
     ctx.beginPath();
     ctx.rect(0, startY - 10, width, viewHeight + 10);
@@ -72,20 +73,8 @@ export class DiepQuadriviumMenu {
     for (let loop = 0; loop < loops; loop++) {
       const currentScrollOffset = displayOffset + (loop * totalHeight);
 
-      if (currentTab === 'BESTIARY') {
-        const colCount = 2;
-        const rowSpacing = 110;
-        const colWidth = (width - 120) / colCount;
-
-        sortedTypes.forEach((type, index) => {
-          const col = index % colCount;
-          const row = Math.floor(index / colCount);
-          const x = 60 + (col * colWidth);
-          const y = 140 + currentScrollOffset + (row * rowSpacing);
-
-          if (y < startY - 150 || y > height + 150) return;
-          QuadriviumEntryRenderer.drawEntry(ctx, type, x, y, colWidth - 20, this.rotation);
-        });
+      if (currentTab === 'MORPHOLOGY') {
+        DiepMorphologyRenderer.drawGrid(ctx, sortedTypes, width, height, startY, currentScrollOffset, this.rotation);
       } else if (currentTab === 'DOSSIER') {
         const paneY = 140 + currentScrollOffset;
         if (paneY > startY - 500 && paneY < height + 500) {
