@@ -15,6 +15,7 @@ export class DiepQuadriviumMenu {
 
   public static render(ctx: CanvasRenderingContext2D, g: any, width: number, height: number): void {
     DiepQuadriviumNavigator.handleInput(g);
+    DiepQuadriviumNavigator.updateTransition();
     this.rotation += 0.015;
 
     ctx.fillStyle = 'rgba(8, 8, 15, 0.99)';
@@ -57,8 +58,17 @@ export class DiepQuadriviumMenu {
         DiepRecordsRenderer.render(ctx, g, width, currentScrollOffset, startY, height);
       }
     }
+
+    // --- SOLID BLACK TRANSITION MASK OVERLAY ---
+    // Instead of forcing alpha transparency on the drawings, paint a black mask over the clipped area
+    if (DiepQuadriviumNavigator.maskAlpha > 0) {
+      ctx.fillStyle = `rgba(8, 8, 15, ${DiepQuadriviumNavigator.maskAlpha})`;
+      ctx.fillRect(0, startY - 10, width, viewHeight + 10);
+    }
+    
     ctx.restore();
 
+    // Elements outside content layout maintain normal steady opacity visibility profiles
     DiepQuadriviumFxRenderer.drawFades(ctx, width, height, startY, viewHeight);
     DiepQuadriviumFxRenderer.drawHeader(ctx, width);
     DiepQuadriviumNavigator.drawTabs(ctx, width);
@@ -70,7 +80,6 @@ export class DiepQuadriviumMenu {
     DiepButtonRenderer.drawCollection(ctx, g, this.getButtons(g, width, height));
   }
 
-  // Purely forwards input notifications straight to the isolated state manager
   public static handleInputDown(mouseY: number): void { DiepQuadriviumScroller.handleInputDown(mouseY); }
   public static handleInputUp(): void { DiepQuadriviumScroller.handleInputUp(); }
   public static handleInputMove(mouseY: number): void { DiepQuadriviumScroller.handleInputMove(mouseY); }

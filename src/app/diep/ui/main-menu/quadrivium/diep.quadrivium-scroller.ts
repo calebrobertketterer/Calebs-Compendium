@@ -20,6 +20,12 @@ export class DiepQuadriviumScroller {
     }
   }
 
+  public static resetScroll(): void {
+    this.scrollY = 0;
+    this.targetScrollY = 0;
+    this.isDragging = false;
+  }
+
   public static handleInputDown(mouseY: number): void {
     this.isDragging = true;
     this.lastMouseY = mouseY;
