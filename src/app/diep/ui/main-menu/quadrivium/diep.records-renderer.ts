@@ -5,21 +5,19 @@ export class DiepRecordsRenderer {
   
   public static getHeight(g: any): number {
     const allTimeCount = g.highScoresService?.getHighScores().length || 0;
-    const sevenDaysAgo = Date.now() - 7 * 24 * 60 * 60 * 1000;
-    const weeklyCount = (g.highScoresService?.getHighScores() || [])
-      .filter((row: any) => new Date(row.date).getTime() >= sevenDaysAgo).length;
+    const weeklyCount = g.highScoresService?.getWeeklyScores().length || 0;
     
     const maxCount = Math.max(allTimeCount, weeklyCount);
-    return Math.max(150, maxCount * 30 + 130);
+    return Math.max(150, Math.min(10, maxCount) * 30 + 130);
   }
 
   public static render(ctx: CanvasRenderingContext2D, g: any, width: number, currentScrollOffset: number, startY: number, height: number): void {
-    const paneY = 140 + currentScrollOffset;
+    const paneY = 100 + currentScrollOffset;
     if (paneY <= startY - 500 || paneY >= height + 500) return;
 
+    // Pull from the two separate, dedicated persistence tracks directly
     const allTimeScores: HighScore[] = g.highScoresService?.getHighScores() || [];
-    const sevenDaysAgo = Date.now() - 7 * 24 * 60 * 60 * 1000;
-    const weeklyScores = allTimeScores.filter(row => new Date(row.date).getTime() >= sevenDaysAgo);
+    const weeklyScores: HighScore[] = g.highScoresService?.getWeeklyScores() || [];
 
     const totalContainerW = Math.min(940, width - 40);
     const startX = (width - totalContainerW) / 2;
