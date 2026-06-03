@@ -9,7 +9,7 @@ export class DiepDossierRenderer {
    * Safe visibility boundary check before drawing.
    */
   public static render(ctx: CanvasRenderingContext2D, g: any, width: number, currentScrollOffset: number, startY: number, height: number): void {
-    const paneY = 140 + currentScrollOffset;
+    const paneY = 100 + currentScrollOffset;
     
     // Self-contained culling optimization
     if (paneY <= startY - 500 || paneY >= height + 500) return;
