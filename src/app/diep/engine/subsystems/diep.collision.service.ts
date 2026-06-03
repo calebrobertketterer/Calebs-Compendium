@@ -1,16 +1,19 @@
+// src/app/diep/engine/subsystems/diep.collision.service.ts
 import { Injectable } from '@angular/core';
 import { Player, Bullet, Enemy, GameSystem } from '../../core/diep.interfaces';
 import { EnemySpawnerService } from '../../enemies/diep.enemy-spawner';
 import { DiepArenaManager, TileType } from './arena/arena.manager';
 import { DiepGameEngineService } from '../diep.game-engine.service';
 import { DiepPlayerService } from './diep.player.service';
+import { DiepStatsService } from '../../core/diep.stats.service';
 
 @Injectable({ providedIn: 'root' })
 export class DiepCollisionService implements GameSystem {
     constructor(
         private spawner: EnemySpawnerService,
         private arenaManager: DiepArenaManager,
-        private playerService: DiepPlayerService
+        private playerService: DiepPlayerService,
+        private diepStatsService: DiepStatsService
     ) {}
 
     /**
@@ -38,6 +41,7 @@ export class DiepCollisionService implements GameSystem {
 
         // Process combat/object colliders and mutate collections directly
         const col = this.handleCollisions(
+            engine,
             activePlayer, 
             engine.bullets, 
             engine.enemies, 
@@ -57,6 +61,7 @@ export class DiepCollisionService implements GameSystem {
     }
 
     public handleCollisions(
+        engine: DiepGameEngineService,
         player: Player,
         bullets: Bullet[],
         enemies: Enemy[],
@@ -73,9 +78,20 @@ export class DiepCollisionService implements GameSystem {
 
                 if (dist < combinedRadius) {
                     this.resolveHealthTrade(bullet, enemy);
+                    
+                    // Track that a player weapon projectile successfully hit a target
+                    this.diepStatsService.recordShotHit();
+
                     if (enemy.onHit) enemy.onHit(enemies, this.spawner, bullet);
                     if (enemy.health <= 0) {
                         if (enemy.onDeath) enemy.onDeath(enemies, this.spawner, enemy, player);
+                        
+                        // Increment session counter tracker on the core engine instance safely
+                        engine.sessionKills++;
+                        
+                        // Register telemetry matrix kill data (handles achievements dynamically downstream)
+                        this.diepStatsService.recordKill(enemy.type, enemy, engine.sessionKills);
+                        
                         onKillEnemy(enemy);
                     }
                     const angle = Math.atan2(bullet.y - enemy.y, bullet.x - enemy.x);
@@ -106,6 +122,13 @@ export class DiepCollisionService implements GameSystem {
                 this.resolveHealthTrade(player, enemy);
                 if (enemy.health <= 0 && !enemy.isInvulnerable) {
                     if (enemy.onDeath) enemy.onDeath(enemies, this.spawner, enemy, player);
+                    
+                    // Increment session counter tracker on ram kill
+                    engine.sessionKills++;
+                    
+                    // Register telemetry matrix kill data for ram kills
+                    this.diepStatsService.recordKill(enemy.type, enemy.color || '', engine.sessionKills);
+                    
                     onKillEnemy(enemy);
                 }
                 this.applyOverlapPush(player, enemy, dist, combinedRadius, 0.4);

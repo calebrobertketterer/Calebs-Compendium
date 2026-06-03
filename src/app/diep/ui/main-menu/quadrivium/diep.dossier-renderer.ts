@@ -14,7 +14,7 @@ export class DiepDossierRenderer {
     // Self-contained culling optimization
     if (paneY <= startY - 500 || paneY >= height + 500) return;
 
-    const tracker = g.quadriviumStatsService?.stats || {
+    const tracker = g.diepStatsService?.stats || {
       playtime: 0,
       totalKills: 0,
       shotsFired: 1,
@@ -32,13 +32,13 @@ export class DiepDossierRenderer {
     ctx.textAlign = 'left';
     ctx.font = '900 16px Inter, sans-serif';
     ctx.fillStyle = '#9b59b6';
-    ctx.fillText('PLAYER PROFILE STATISTICS', startX + 25, paneY + 35);
+    ctx.fillText('PLAYER STATISTICS', startX + 25, paneY + 35);
 
     const accuracyRate = Math.round((tracker.shotsHit / Math.max(1, tracker.shotsFired)) * 100);
     const metrics = [
       { name: 'TIME COMBATING', value: this.formatTime(tracker.playtime) },
-      { name: 'ENTITIES PURGED', value: (tracker.totalKills || 0).toLocaleString() },
-      { name: 'FIRE ACCURACY', value: `${accuracyRate}%` },
+      { name: 'SHAPES DESTROYED', value: (tracker.totalKills || 0).toLocaleString() },
+      { name: 'SHOT ACCURACY', value: `${accuracyRate}%` },
       { name: 'UPGRADES APPLIED', value: (tracker.upgradesSpent || 0).toLocaleString() }
     ];
 
@@ -63,7 +63,7 @@ export class DiepDossierRenderer {
     ctx.textAlign = 'left';
     ctx.font = '900 16px Inter, sans-serif';
     ctx.fillStyle = '#9b59b6';
-    ctx.fillText('PURGE MANIFEST BY FACTION', startX + 25, panel2Y + 35);
+    ctx.fillText('SHAPES DESTROYED BY COLOR', startX + 25, panel2Y + 35);
 
     const factions = ['Red', 'Orange', 'Yellow', 'Green', 'Blue', 'Purple'];
     const factionColors: Record<string, string> = {
