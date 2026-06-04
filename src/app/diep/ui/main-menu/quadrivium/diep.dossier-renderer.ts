@@ -17,9 +17,12 @@ export class DiepDossierRenderer {
     const tracker = g.diepStatsService?.stats || {
       playtime: 0,
       totalKills: 0,
-      shotsFired: 1,
+      shotsFired: 0,
       shotsHit: 0,
       upgradesSpent: 0,
+      gamesPlayed: 0,
+      wavesConquered: 0,
+      damageDealt: 0,
       factionKills: { 'Red': 0, 'Orange': 0, 'Yellow': 0, 'Green': 0, 'Blue': 0, 'Purple': 0 }
     };
 
@@ -38,14 +41,21 @@ export class DiepDossierRenderer {
     const metrics = [
       { name: 'TIME COMBATING', value: this.formatTime(tracker.playtime) },
       { name: 'SHAPES DESTROYED', value: (tracker.totalKills || 0).toLocaleString() },
+      { name: 'SHOTS FIRED', value: (tracker.shotsFired || 0).toLocaleString() },
       { name: 'SHOT ACCURACY', value: `${accuracyRate}%` },
-      { name: 'UPGRADES APPLIED', value: (tracker.upgradesSpent || 0).toLocaleString() }
+      { name: 'UPGRADES APPLIED', value: (tracker.upgradesSpent || 0).toLocaleString() },
+      { name: 'GAMES PLAYED', value: (tracker.gamesPlayed || 0).toLocaleString() },
+      { name: 'WAVES CONQUERED', value: (tracker.wavesConquered || 0).toLocaleString() },
+      { name: 'DAMAGE DEALT', value: (tracker.damageDealt || 0).toLocaleString() }
     ];
 
     ctx.font = 'bold 11px Inter, sans-serif';
     metrics.forEach((m, idx) => {
-      const cX = startX + 25 + (idx % 2) * (containerW / 2 - 20);
-      const cY = paneY + 75 + Math.floor(idx / 2) * 50;
+      // 4 columns x 2 rows cleanly displays all 8 fields
+      const col = idx % 4;
+      const row = Math.floor(idx / 4);
+      const cX = startX + 25 + col * (containerW / 4 - 5);
+      const cY = paneY + 75 + row * 50;
 
       ctx.fillStyle = '#7f8c8d';
       ctx.fillText(m.name, cX, cY);

@@ -8,6 +8,9 @@ export interface LifetimeStats {
   shotsFired: number;     
   shotsHit: number;
   upgradesSpent: number;
+  gamesPlayed: number;       // Tracks total game loops initiated
+  wavesConquered: number;    // High-water mark for peak wave reached
+  damageDealt: number;       // Running total of damage inflicted across all runs
   factionKills: Record<string, number>;
 }
 
@@ -22,6 +25,9 @@ export class DiepStatsService {
     shotsFired: 0,
     shotsHit: 0,
     upgradesSpent: 0,
+    gamesPlayed: 0,
+    wavesConquered: 0,
+    damageDealt: 0,
     factionKills: { 'Red': 0, 'Orange': 0, 'Yellow': 0, 'Green': 0, 'Blue': 0, 'Purple': 0 }
   };
 
@@ -103,6 +109,34 @@ export class DiepStatsService {
   public recordUpgradeSpent(count: number = 1): void {
     this.stats.upgradesSpent += count;
     this.save();
+  }
+
+  /**
+   * Increments the total count of matches or runs initialized.
+   */
+  public recordGameStarted(): void {
+    this.stats.gamesPlayed++;
+    this.save();
+  }
+
+  /**
+   * Updates peak wave milestone achieved if value exceeds the current high record.
+   */
+  public recordWaveReached(wave: number): void {
+    if (wave > this.stats.wavesConquered) {
+      this.stats.wavesConquered = wave;
+      this.save();
+    }
+  }
+
+  /**
+   * Tallies the total amount of numeric damage dealt.
+   */
+  public recordDamageDealt(amount: number): void {
+    if (amount > 0 && !isNaN(amount)) {
+      this.stats.damageDealt += amount;
+      this.save();
+    }
   }
 
   private save(): void {
