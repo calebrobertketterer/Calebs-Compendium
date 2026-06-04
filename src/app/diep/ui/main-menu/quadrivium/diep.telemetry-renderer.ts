@@ -1,5 +1,7 @@
-// src/app/diep/ui/main-menu/quadrivium/diep.dossier-renderer.ts
-export class DiepDossierRenderer {
+// src/app/diep/ui/main-menu/quadrivium/diep.telemetry-renderer.ts
+import { Injectable } from '@angular/core';
+
+export class DiepTelemetryRenderer {
 
   public static getHeight(): number {
     return 480;

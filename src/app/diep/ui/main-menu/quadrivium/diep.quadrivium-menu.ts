@@ -3,7 +3,7 @@ import { EnemyRegistry } from '../../../enemies/enemy.registry';
 import { DiepMorphologySorter } from './diep.morphology-sorter';
 import { DiepMorphologyRenderer } from './diep.morphology-renderer';
 import { DiepQuadriviumNavigator } from './diep.quadrivium-nav-bar';
-import { DiepDossierRenderer } from './diep.dossier-renderer';
+import { DiepTelemetryRenderer } from './diep.telemetry-renderer';
 import { DiepRecordsRenderer } from './diep.records-renderer';
 import { DiepQuadriviumScroller } from './diep.quadrivium-scroller';
 import { DiepQuadriviumFxRenderer } from './diep.quadrivium-fx-renderer';
@@ -31,8 +31,8 @@ export class DiepQuadriviumMenu {
 
     if (currentTab === 'MORPHOLOGY') {
       contentHeight = DiepMorphologyRenderer.getHeight(sortedTypes);
-    } else if (currentTab === 'DOSSIER') {
-      contentHeight = DiepDossierRenderer.getHeight(); 
+    } else if (currentTab === 'TELEMETRY') {
+      contentHeight = DiepTelemetryRenderer.getHeight(); 
     } else if (currentTab === 'RECORDS') {
       contentHeight = DiepRecordsRenderer.getHeight(g);
     }
@@ -52,15 +52,14 @@ export class DiepQuadriviumMenu {
 
       if (currentTab === 'MORPHOLOGY') {
         DiepMorphologyRenderer.render(ctx, sortedTypes, width, height, startY, currentScrollOffset, this.rotation);
-      } else if (currentTab === 'DOSSIER') {
-        DiepDossierRenderer.render(ctx, g, width, currentScrollOffset, startY, height);
+      } else if (currentTab === 'TELEMETRY') {
+        DiepTelemetryRenderer.render(ctx, g, width, currentScrollOffset, startY, height);
       } else if (currentTab === 'RECORDS') {
         DiepRecordsRenderer.render(ctx, g, width, currentScrollOffset, startY, height);
       }
     }
 
     // --- SOLID BLACK TRANSITION MASK OVERLAY ---
-    // Instead of forcing alpha transparency on the drawings, paint a black mask over the clipped area
     if (DiepQuadriviumNavigator.maskAlpha > 0) {
       ctx.fillStyle = `rgba(8, 8, 15, ${DiepQuadriviumNavigator.maskAlpha})`;
       ctx.fillRect(0, startY - 10, width, viewHeight + 10);

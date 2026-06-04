@@ -3,7 +3,7 @@ import { DiepButton } from '../../../core/diep.interfaces';
 import { DiepQuadriviumScroller } from './diep.quadrivium-scroller';
 
 export class DiepQuadriviumNavigator {
-  public static tabs = ['MORPHOLOGY', 'DOSSIER', 'RECORDS'];
+  public static tabs = ['MORPHOLOGY', 'TELEMETRY', 'RECORDS'];
   public static activeTabIndex = 0;
 
   private static tabSpacing = 140;
