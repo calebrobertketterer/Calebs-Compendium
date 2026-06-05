@@ -4,14 +4,14 @@ import { Bullet, Enemy, HighScore, TrailSegment, DifficultyMode, GameSystem } fr
 import { DiepTimeManager } from '../core/diep.time-manager';
 import { DiepProjectileService } from './subsystems/diep.projectile.service';
 import { DiepCollisionService } from './subsystems/diep.collision.service';
-import { DiepPlayerService } from './subsystems/diep.player.service';
+import { DiepPlayerService } from './subsystems/player/diep.player.service';
 import { DiepEnemyService } from '../enemies/diep.enemy.service';
 import { DiepWaveManagerService } from './subsystems/arena/arena.wave-manager';
 import { DiepArenaManager } from './subsystems/arena/arena.manager';
 import { DiepFloorDirector } from './subsystems/arena/arena.floor-director.service';
 import { DiepDeathAnimationService } from './subsystems/diep.death-animation.service';
 import { DiepArenaResetService } from './subsystems/arena/arena.reset';
-import { DiepPlayerUpgradesService } from './subsystems/player-upgrades/diep.player-upgrades.service';
+import { DiepPlayerUpgradesService } from './subsystems/player/player-upgrades/diep.player-upgrades.service';
 import { AchievementService } from '../core/diep.achievement.service';
 import { HighScoresService } from '../core/diep.high-scores.service';
 import { EnemySpawnerService } from '../enemies/diep.enemy-spawner';

@@ -7,7 +7,7 @@ import { DiepGameEngineService } from './engine/diep.game-engine.service';
 import { DiepInputService } from './engine/diep.input.service';
 import { DiepInteractionService } from './ui/buttons/diep.button-interaction.service';
 import { DiepDebugService} from './engine/debug/diep.debug.service';
-import { DiepPlayerService } from './engine/subsystems/diep.player.service';
+import { DiepPlayerService } from './engine/subsystems/player/diep.player.service';
 
 @Component({
   selector: 'app-diep',

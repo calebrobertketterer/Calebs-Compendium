@@ -7,8 +7,8 @@ import { DiepAchievementMenu } from '../ui/main-menu/achievements/diep.achieveme
 import { DiepDynamicTitle } from '../ui/main-menu/diep.dynamic-title';
 import { DiepTipsManager } from '../ui/main-menu/diep.tips-manager';
 import { DiepProjectileService } from './subsystems/diep.projectile.service';
-import { DiepPlayerService } from './subsystems/diep.player.service';
-import { DiepWeaponController } from './subsystems/diep.weapon-controller';
+import { DiepPlayerService } from './subsystems/player/diep.player.service';
+import { DiepWeaponController } from './subsystems/player/diep.weapon-controller';
 
 @Injectable({
   providedIn: 'root'

@@ -1,7 +1,7 @@
 import { Injectable } from '@angular/core';
-import { Player, DifficultyMode, GameSystem } from '../../core/diep.interfaces';
+import { Player, DifficultyMode, GameSystem } from '../../../core/diep.interfaces';
 import { DiepPlayerUpgradesService } from './player-upgrades/diep.player-upgrades.service';
-import { DiepGameEngineService } from '../diep.game-engine.service';
+import { DiepGameEngineService } from '../../diep.game-engine.service';
 
 @Injectable({ providedIn: 'root' })
 export class DiepPlayerService implements GameSystem {

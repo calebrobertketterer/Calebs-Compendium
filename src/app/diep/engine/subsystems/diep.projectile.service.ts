@@ -3,8 +3,8 @@ import { Injectable } from '@angular/core';
 import { Bullet, TrailSegment, Player, GameSystem } from '../../core/diep.interfaces';
 import { DiepTimeManager } from '../../core/diep.time-manager';
 import { DiepGameEngineService } from '../diep.game-engine.service';
-import { DiepPlayerService } from './diep.player.service';
-import { DiepWeaponController } from './diep.weapon-controller';
+import { DiepPlayerService } from './player/diep.player.service';
+import { DiepWeaponController } from './player/diep.weapon-controller';
 
 @Injectable({
     providedIn: 'root'

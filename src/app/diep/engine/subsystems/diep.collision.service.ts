@@ -2,7 +2,7 @@
 import { Injectable } from '@angular/core';
 import { Player, Bullet, Enemy, GameSystem } from '../../core/diep.interfaces';
 import { DiepGameEngineService } from '../diep.game-engine.service';
-import { DiepPlayerService } from './diep.player.service';
+import { DiepPlayerService } from './player/diep.player.service';
 import { DiepStatsService } from '../../core/diep.stats.service';
 import { DiepEnvironmentCollisionService } from './arena/arena.environment-collision';
 import { DiepCombatResolverService } from './diep.combat-resolver.service';

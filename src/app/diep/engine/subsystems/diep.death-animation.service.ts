@@ -1,7 +1,7 @@
 import { Injectable } from '@angular/core';
 import { Enemy, GameSystem } from '../../core/diep.interfaces';
 import { HighScoresService } from '../../core/diep.high-scores.service';
-import { DiepPlayerService } from './diep.player.service';
+import { DiepPlayerService } from './player/diep.player.service';
 
 @Injectable({ providedIn: 'root' })
 export class DiepDeathAnimationService implements GameSystem {

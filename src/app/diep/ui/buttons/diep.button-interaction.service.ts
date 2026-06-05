@@ -9,7 +9,7 @@ import { DiepPauseOverlay } from '../overlays/pause-overlay';
 import { DiepGameOverOverlay } from '../overlays/game-over-overlay';
 import { DiepHealthBarRenderer } from '../hud/diep.health-bar-renderer';
 import { DiepUpgradeMenuRenderer } from '../hud/upgrade-menu/diep.upgrade-menu-renderer';
-import { DiepPlayerService } from '../../engine/subsystems/diep.player.service';
+import { DiepPlayerService } from '../../engine/subsystems/player/diep.player.service';
 
 @Injectable({ providedIn: 'root' })
 export class DiepInteractionService {

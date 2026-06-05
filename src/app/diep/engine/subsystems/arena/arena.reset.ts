@@ -2,7 +2,7 @@
 import { Injectable } from '@angular/core';
 import { TransitionManager } from '../../../ui/diep.transition-manager';
 import { DiepTimeManager } from '../../../core/diep.time-manager';
-import { DiepWeaponController } from '../diep.weapon-controller';
+import { DiepWeaponController } from '../player/diep.weapon-controller';
 
 @Injectable({ providedIn: 'root' })
 export class DiepArenaResetService {

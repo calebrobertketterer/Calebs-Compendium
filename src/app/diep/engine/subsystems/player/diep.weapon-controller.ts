@@ -1,8 +1,8 @@
 // src/app/diep/engine/subsystems/diep.weapon-controller.ts
 import { Injectable } from '@angular/core';
-import { Player, Bullet } from '../../core/diep.interfaces';
-import { DiepTimeManager } from '../../core/diep.time-manager';
-import { DiepStatsService } from '../../core/diep.stats.service';
+import { Player, Bullet } from '../../../core/diep.interfaces';
+import { DiepTimeManager } from '../../../core/diep.time-manager';
+import { DiepStatsService } from '../../../core/diep.stats.service';
 
 @Injectable({
     providedIn: 'root'
