@@ -1,12 +1,14 @@
+// src/app/diep/engine/subsystems/arena/arena.reset.ts
 import { Injectable } from '@angular/core';
 import { TransitionManager } from '../../../ui/diep.transition-manager';
 import { DiepTimeManager } from '../../../core/diep.time-manager';
+import { DiepWeaponController } from '../diep.weapon-controller';
 
 @Injectable({ providedIn: 'root' })
 export class DiepArenaResetService {
     public transition = new TransitionManager();
 
-    constructor() {
+    constructor(private weaponController: DiepWeaponController) {
         this.transition.fadeIn();
     }
 
@@ -56,7 +58,7 @@ export class DiepArenaResetService {
         engine.isStartingNewGame = startGameImmediately;
         
         engine.waveManager.reset();
-        engine.projectileService.resetCooldown();
+        this.weaponController.resetCooldown();
         engine.topScores = engine.highScoresService.getHighScores();
         engine.arenaManager.init(engine.width, engine.height);
         engine.deathAnimation.reset();

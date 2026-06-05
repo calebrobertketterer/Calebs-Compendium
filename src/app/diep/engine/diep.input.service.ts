@@ -1,3 +1,4 @@
+// src/app/diep/engine/diep.input.service.ts
 import { Injectable } from '@angular/core';
 import { DiepGameEngineService } from './diep.game-engine.service';
 import { DiepInteractionService } from '../ui/buttons/diep.button-interaction.service';
@@ -7,6 +8,7 @@ import { DiepDynamicTitle } from '../ui/main-menu/diep.dynamic-title';
 import { DiepTipsManager } from '../ui/main-menu/diep.tips-manager';
 import { DiepProjectileService } from './subsystems/diep.projectile.service';
 import { DiepPlayerService } from './subsystems/diep.player.service';
+import { DiepWeaponController } from './subsystems/diep.weapon-controller';
 
 @Injectable({
   providedIn: 'root'
@@ -16,7 +18,8 @@ export class DiepInputService {
     private gameEngine: DiepGameEngineService,
     private buttonHandler: DiepInteractionService,
     private projectileService: DiepProjectileService,
-    private playerService: DiepPlayerService
+    private playerService: DiepPlayerService,
+    private weaponController: DiepWeaponController
   ) {}
 
   public handleKeyDown(event: KeyboardEvent, drawCallback: () => void, gameLoopCallback: () => void) {
@@ -41,7 +44,7 @@ export class DiepInputService {
     if ((key === 'k') && !this.gameEngine.mouseAiming) {
       const g = this.gameEngine;
       const activePlayer = this.playerService.player;
-      this.projectileService.shootBullet(activePlayer, g.mousePos, g.mouseAiming, g.lastAngle, g.bullets);
+      this.weaponController.shootBullet(activePlayer, g.mousePos, g.mouseAiming, g.lastAngle, g.bullets);
       event.preventDefault();
     }
 
@@ -119,7 +122,7 @@ export class DiepInputService {
       const activePlayer = this.playerService.player;
       if (g.mouseAiming && event.button === 0 && !g.isPaused && !g.gameOver && g.isGameStarted) {
         g.mouseDown = true;
-        this.projectileService.shootBullet(activePlayer, g.mousePos, g.mouseAiming, g.lastAngle, g.bullets);
+        this.weaponController.shootBullet(activePlayer, g.mousePos, g.mouseAiming, g.lastAngle, g.bullets);
       }
     }
   }
