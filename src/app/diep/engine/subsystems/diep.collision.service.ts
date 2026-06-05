@@ -2,18 +2,18 @@
 import { Injectable } from '@angular/core';
 import { Player, Bullet, Enemy, GameSystem } from '../../core/diep.interfaces';
 import { EnemySpawnerService } from '../../enemies/diep.enemy-spawner';
-import { DiepArenaManager, TileType } from './arena/arena.manager';
 import { DiepGameEngineService } from '../diep.game-engine.service';
 import { DiepPlayerService } from './diep.player.service';
 import { DiepStatsService } from '../../core/diep.stats.service';
+import { DiepEnvironmentCollisionService } from './arena/arena.environment-collision';
 
 @Injectable({ providedIn: 'root' })
 export class DiepCollisionService implements GameSystem {
     constructor(
         private spawner: EnemySpawnerService,
-        private arenaManager: DiepArenaManager,
         private playerService: DiepPlayerService,
-        private diepStatsService: DiepStatsService
+        private diepStatsService: DiepStatsService,
+        private envCollisionService: DiepEnvironmentCollisionService
     ) {}
 
     /**
@@ -23,12 +23,12 @@ export class DiepCollisionService implements GameSystem {
     public update(engine: DiepGameEngineService, tick: number, ms: number): void {
         const activePlayer = this.playerService.player;
 
-        // 1. Check entity collisions against environment tiles
-        this.handleEnvironmentCollision(activePlayer);
-        engine.enemies.forEach(e => this.handleEnvironmentCollision(e));
+        // 1. Check entity collisions against environment tiles using the delegated service
+        this.envCollisionService.handleEnvironmentCollision(activePlayer);
+        engine.enemies.forEach(e => this.envCollisionService.handleEnvironmentCollision(e));
         
         for (let i = engine.bullets.length - 1; i >= 0; i--) {
-            if (this.handleEnvironmentCollision(engine.bullets[i], true)) {
+            if (this.envCollisionService.handleEnvironmentCollision(engine.bullets[i], true)) {
                 engine.bullets.splice(i, 1);
             }
         }
@@ -47,7 +47,6 @@ export class DiepCollisionService implements GameSystem {
             engine.enemies, 
             (e: Enemy) => {
                 if ((engine as any).upgradeService) {
-                    // FIXED: Explicitly pass down the resolved activePlayer instance here
                     (engine as any).upgradeService.processKillRewards(engine, e, activePlayer);
                 }
             }
@@ -56,8 +55,7 @@ export class DiepCollisionService implements GameSystem {
         engine.enemies = col.enemies;
 
         // 3. Keep player clamped inside the game simulation viewport canvas boundaries
-        activePlayer.x = Math.max(activePlayer.radius, Math.min(engine.width - activePlayer.radius, activePlayer.x));
-        activePlayer.y = Math.max(activePlayer.radius, Math.min(engine.height - activePlayer.radius, activePlayer.y));
+        this.envCollisionService.clampToCanvas(activePlayer, engine.width, engine.height);
     }
 
     public handleCollisions(
@@ -156,65 +154,6 @@ export class DiepCollisionService implements GameSystem {
             bullets: bullets.filter(b => b.health > 0),
             enemies: enemies.filter(e => e.health > 0 || e.isInvulnerable)
         };
-    }
-
-    public handleEnvironmentCollision(entity: any, isBullet: boolean = false): boolean {
-        if (entity.isGhost) return false;
-
-        const tileSize = this.arenaManager.tileSize;
-        const margin = isBullet ? 2 : 0;
-        const left = entity.x - entity.radius - margin;
-        const right = entity.x + entity.radius + margin;
-        const top = entity.y - entity.radius - margin;
-        const bottom = entity.y + entity.radius + margin;
-
-        const gridLeft = Math.floor(left / tileSize);
-        const gridRight = Math.floor(right / tileSize);
-        const gridTop = Math.floor(top / tileSize);
-        const gridBottom = Math.floor(bottom / tileSize);
-
-        for (let gy = gridTop; gy <= gridBottom; gy++) {
-            for (let gx = gridLeft; gx <= gridRight; gx++) {
-                const tile = this.arenaManager.getTileAt(gx * tileSize + 1, gy * tileSize + 1);
-                if (!tile) continue;
-
-                if (tile.type === TileType.HOLE && tile.transition > 0.8 && !entity.isFlying) {
-                    const centerTile = this.arenaManager.getTileAt(entity.x, entity.y);
-                    if (centerTile === tile) {
-                        entity.health = 0;
-                        return true;
-                    }
-                }
-
-                const wallThreshold = isBullet ? 0.2 : 0.5;
-                if (tile.type === TileType.WALL && tile.transition > wallThreshold) {
-                    if (isBullet) {
-                        entity.health = 0;
-                        entity.dx = 0;
-                        entity.dy = 0;
-                        return true;
-                    }
-
-                    const tileCenterX = (gx * tileSize) + tileSize / 2;
-                    const tileCenterY = (gy * tileSize) + tileSize / 2;
-                    const diffX = entity.x - tileCenterX;
-                    const diffY = entity.y - tileCenterY;
-                    const overlapX = (tileSize / 2 + entity.radius) - Math.abs(diffX);
-                    const overlapY = (tileSize / 2 + entity.radius) - Math.abs(diffY);
-
-                    if (overlapX > 0 && overlapY > 0) {
-                        if (overlapX < overlapY) {
-                            entity.x += diffX > 0 ? overlapX : -overlapX;
-                            entity.vx = 0;
-                        } else {
-                            entity.y += diffY > 0 ? overlapY : -overlapY;
-                            entity.vy = 0;
-                        }
-                    }
-                }
-            }
-        }
-        return false;
     }
 
     private applyOverlapPush(a: any, b: any, dist: number, combinedRadius: number, strength: number) {
