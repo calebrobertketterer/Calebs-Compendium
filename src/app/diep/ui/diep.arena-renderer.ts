@@ -17,7 +17,7 @@ export class DiepWorldRenderer {
     if (g.arenaManager) {
       DiepBackgroundRenderer.drawGround(ctx, width, height, tileSize, tiles);
     } else {
-      this.drawSimpleBackground(ctx, g.isDarkMode, width, height);
+      this.drawSimpleBackground(ctx, width, height);
     }
 
     // 2. Layer: World Objects & Ground Enemies
@@ -130,8 +130,8 @@ export class DiepWorldRenderer {
     ctx.globalAlpha = 1.0; 
   }
 
-  private static drawSimpleBackground(ctx: CanvasRenderingContext2D, isDarkMode: boolean, width: number, height: number): void {
-    ctx.fillStyle = isDarkMode ? '#1e1e1e' : '#f4f4f4';
+  private static drawSimpleBackground(ctx: CanvasRenderingContext2D, width: number, height: number): void {
+    ctx.fillStyle = '#1e1e1e';
     ctx.fillRect(0, 0, width, height);
   }
 }

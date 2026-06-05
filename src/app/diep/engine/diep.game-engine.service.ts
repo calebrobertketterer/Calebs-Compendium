@@ -127,6 +127,4 @@ export class DiepGameEngineService {
         }
         return this.isPaused; 
     }
-
-    public toggleDarkMode() { this.isDarkMode = !this.isDarkMode; }
 }
