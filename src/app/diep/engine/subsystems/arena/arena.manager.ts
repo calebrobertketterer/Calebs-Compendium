@@ -1,3 +1,4 @@
+// src/app/diep/engine/subsystems/arena/arena.manager.ts
 import { Injectable } from '@angular/core';
 
 export enum TileType {
@@ -46,39 +47,49 @@ export class DiepArenaManager {
 
   public update(deltaTime: number): void {
     this.grid.forEach(tile => {
-      // Use 'as any' for comparisons to avoid TS "no overlap" errors during build
-      const target = tile.targetType as any;
-      const current = tile.type as any;
+      const target = tile.targetType;
 
-      // HANDLE HOLE WARNING & LOWERING
+      // HANDLE HOLE LIFECYCLE
       if (target === TileType.HOLE) {
-        if (current !== TileType.HOLE) {
+        if (tile.type !== TileType.HOLE) {
           if (tile.warningTime < this.WARNING_DURATION) {
             tile.warningTime += deltaTime;
           } else {
-            // After warning, start lowering
+            // Warning finished, swap the structural type so rendering can begin
             tile.type = TileType.HOLE;
             tile.transition = 0;
           }
         } else if (tile.transition < 1) {
-          // Slow lowering transition
+          // Advance the progressive visual transition phase sequentially
           tile.transition += deltaTime * 0.001; 
           if (tile.transition > 1) tile.transition = 1;
         }
       } 
-      // HANDLE WALL RAISING
-      else if (target === TileType.WALL && tile.transition < 1) {
-        tile.transition += deltaTime * 0.002;
-        if (tile.transition >= 1) {
+      // HANDLE WALL LIFECYCLE
+      else if (target === TileType.WALL) {
+        // Set type immediately so render engine knows it is drawing a raising wall
+        if (tile.type !== TileType.WALL) {
           tile.type = TileType.WALL;
-          tile.transition = 1;
+          tile.transition = 0;
+        }
+        
+        if (tile.transition < 1) {
+          tile.transition += deltaTime * 0.002;
+          if (tile.transition >= 1) {
+            tile.transition = 1;
+          }
         }
       }
-      // HANDLE CLEARING/FADING OUT
-      else if (target === TileType.EMPTY && tile.transition > 0) {
-        tile.transition -= deltaTime * 0.0015;
-        if (tile.transition <= 0) {
-          tile.transition = 0;
+      // HANDLE CLEARING / FADING BACK TO EMPTY
+      else if (target === TileType.EMPTY) {
+        if (tile.transition > 0) {
+          tile.transition -= deltaTime * 0.0015;
+          if (tile.transition <= 0) {
+            tile.transition = 0;
+            tile.type = TileType.EMPTY;
+            tile.warningTime = 0;
+          }
+        } else {
           tile.type = TileType.EMPTY;
           tile.warningTime = 0;
         }
@@ -87,7 +98,7 @@ export class DiepArenaManager {
   }
 
   /**
-   * RESTORED: Resets all tiles to empty target for director cleanup
+   * Resets all tiles to empty target for director cleanup
    */
   public clearAll(): void {
     this.grid.forEach(tile => {
