@@ -75,6 +75,7 @@ export class DiepGameEngineService {
         this.systems = [
             this.playerService,
             this.projectileService,
+            this.arenaManager,
             this.collisionService,
             this.enemyService,
             this.deathAnimation
@@ -113,12 +114,6 @@ export class DiepGameEngineService {
         }
 
         if (this.isGameStarted && !this.isPaused && !this.gameOver) {
-            // Run structural state updates and timers across the map grid matrix
-            if (this.arenaEnabled) {
-                this.arenaManager.update(DiepTimeManager.gameMs);
-                this.hazardDirector.update(DiepTimeManager.gameMs, this.width, this.height);
-            }
-
             this.waveManager.updateWaves(this.enemies, this.width, this.height);
             this.achievementService.updateProgress('WAVE', this.waveManager.waveCount);
             this.diepStatsService.trackTime(DiepTimeManager.gameMs / 1000);

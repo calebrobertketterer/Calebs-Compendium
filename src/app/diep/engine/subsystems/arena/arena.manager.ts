@@ -1,5 +1,7 @@
 // src/app/diep/engine/subsystems/arena/arena.manager.ts
 import { Injectable } from '@angular/core';
+import { GameSystem } from '../../../core/diep.interfaces';
+import { DiepFloorDirector } from './arena.floor-director.service';
 
 export enum TileType {
   EMPTY = 'EMPTY',
@@ -17,7 +19,7 @@ export interface ArenaTile {
 }
 
 @Injectable({ providedIn: 'root' })
-export class DiepArenaManager {
+export class DiepArenaManager implements GameSystem {
   public readonly tileSize = 50;
   private grid: Map<string, ArenaTile> = new Map();
   private columns: number = 0;
@@ -25,6 +27,8 @@ export class DiepArenaManager {
 
   // 1500ms allows for 3 distinct blinks at 500ms intervals
   private readonly WARNING_DURATION = 1500;
+
+  constructor(private hazardDirector: DiepFloorDirector) {}
 
   public init(width: number, height: number): void {
     this.columns = Math.ceil(width / this.tileSize);
@@ -45,7 +49,21 @@ export class DiepArenaManager {
     }
   }
 
-  public update(deltaTime: number): void {
+  /**
+   * Satisfies the GameSystem contract.
+   * Encapsulates grid evaluation and layout direction calculations entirely.
+   */
+  public update(engine: any, tick: number, ms: number): void {
+    if (!engine.arenaEnabled) return;
+
+    // Tick the grid tile matrix transformations using the exact engine time delta
+    this.tickGrid(ms);
+
+    // Coordinate the pattern generation sequences and pass the instance downward
+    this.hazardDirector.update(ms, engine.width, engine.height, this);
+  }
+
+  private tickGrid(deltaTime: number): void {
     this.grid.forEach(tile => {
       const target = tile.targetType;
 
@@ -55,19 +73,16 @@ export class DiepArenaManager {
           if (tile.warningTime < this.WARNING_DURATION) {
             tile.warningTime += deltaTime;
           } else {
-            // Warning finished, swap the structural type so rendering can begin
             tile.type = TileType.HOLE;
             tile.transition = 0;
           }
         } else if (tile.transition < 1) {
-          // Advance the progressive visual transition phase sequentially
           tile.transition += deltaTime * 0.001; 
           if (tile.transition > 1) tile.transition = 1;
         }
       } 
       // HANDLE WALL LIFECYCLE
       else if (target === TileType.WALL) {
-        // Set type immediately so render engine knows it is drawing a raising wall
         if (tile.type !== TileType.WALL) {
           tile.type = TileType.WALL;
           tile.transition = 0;
