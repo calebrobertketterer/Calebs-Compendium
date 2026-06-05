@@ -1,3 +1,4 @@
+// src/app/diep/ui/diep.menus-manager.ts
 import { DiepQuadriviumMenu } from './main-menu/quadrivium/diep.quadrivium-menu';
 import { DiepAchievementMenu } from './main-menu/achievements/diep.achievement-menu';
 import { DiepMainMenu } from './main-menu/diep.main-menu';
@@ -20,7 +21,7 @@ export class DiepMenus {
         DiepMainMenu.draw(ctx, g, width, height);
       } else if (g.isPaused) {
         DiepPauseOverlay.draw(ctx, g, width, height);
-      } else if (g.gameOver && g.deathAnimation.deathAnimationTimeStart === null) {
+      } else if (g.gameOver && !g.gameOverService.isAnimationActive()) {
         DiepGameOverOverlay.draw(ctx, g, width, height);
       }
     }

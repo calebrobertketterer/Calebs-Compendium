@@ -9,7 +9,7 @@ import { DiepEnemyService } from '../enemies/diep.enemy.service';
 import { DiepWaveManagerService } from './subsystems/arena/arena.wave-manager';
 import { DiepArenaManager } from './subsystems/arena/arena.manager';
 import { DiepFloorDirector } from './subsystems/arena/arena.floor-director.service';
-import { DiepDeathAnimationService } from './subsystems/diep.death-animation.service';
+import { DiepGameOverService } from './subsystems/diep.game-over.service';
 import { DiepArenaResetService } from './subsystems/arena/arena.reset';
 import { DiepPlayerUpgradesService } from './subsystems/player/player-upgrades/diep.player-upgrades.service';
 import { AchievementService } from '../core/diep.achievement.service';
@@ -64,7 +64,7 @@ export class DiepGameEngineService {
         public arenaManager: DiepArenaManager,
         public hazardDirector: DiepFloorDirector,
         public arenaReset: DiepArenaResetService,
-        public deathAnimation: DiepDeathAnimationService,
+        public gameOverService: DiepGameOverService,
         public diepStatsService: DiepStatsService
     ) {
         this.playerService.initializePlayer(this.currentDifficulty, this.persistentXp);
@@ -78,7 +78,7 @@ export class DiepGameEngineService {
             this.arenaManager,
             this.collisionService,
             this.enemyService,
-            this.deathAnimation
+            this.gameOverService
         ];
 
         // Mirror service property to engine instance for easy menu rendering extraction
@@ -95,7 +95,7 @@ export class DiepGameEngineService {
     }
 
     private ticker = (time: number) => {
-        const isLogicPaused = this.isPaused || (this.gameOver && this.deathAnimation.deathAnimationTimeStart === null);
+        const isLogicPaused = this.isPaused || (this.gameOver && !this.gameOverService.isAnimationActive());
         DiepTimeManager.update(isLogicPaused, time);
 
         this.update();

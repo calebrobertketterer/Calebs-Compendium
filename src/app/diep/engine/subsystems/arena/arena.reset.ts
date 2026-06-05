@@ -3,12 +3,17 @@ import { Injectable } from '@angular/core';
 import { TransitionManager } from '../../../ui/diep.transition-manager';
 import { DiepTimeManager } from '../../../core/diep.time-manager';
 import { DiepWeaponController } from '../player/diep.weapon-controller';
+import { DiepGameOverService } from '../diep.game-over.service';
 
 @Injectable({ providedIn: 'root' })
 export class DiepArenaResetService {
     public transition = new TransitionManager();
 
-    constructor(private weaponController: DiepWeaponController) {
+    // Best Practice: Directly inject the exact service we need to manipulate
+    constructor(
+        private weaponController: DiepWeaponController,
+        private gameOverService: DiepGameOverService
+    ) {
         this.transition.fadeIn();
     }
 
@@ -61,9 +66,7 @@ export class DiepArenaResetService {
         this.weaponController.resetCooldown();
         engine.topScores = engine.highScoresService.getHighScores();
         engine.arenaManager.init(engine.width, engine.height);
-        engine.deathAnimation.reset();
-
-        // Safe telemetry registration when an active match sequence begins
+        this.gameOverService.reset();
         if (startGameImmediately && engine.diepStatsService) {
             engine.diepStatsService.recordGameStarted();
         }

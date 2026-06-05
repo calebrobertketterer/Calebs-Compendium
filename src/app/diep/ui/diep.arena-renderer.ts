@@ -1,10 +1,11 @@
+// src/app/diep/ui/diep.arena-renderer.ts
 import { Player, Enemy, Bullet, TrailSegment } from '../core/diep.interfaces';
 import { EnemyRegistry } from '../enemies/enemy.registry';
 import { DiepBackgroundRenderer } from './diep.grid-renderer';
 
 export class DiepWorldRenderer {
   /**
-   * This is the NEW Master Render Call. 
+   * This is the Master Render Call. 
    * It handles the correct layering (Ground -> World -> Walls -> Flying).
    */
   public static renderWorld(ctx: CanvasRenderingContext2D, g: any, player: Player, width: number, height: number): void {
@@ -23,8 +24,7 @@ export class DiepWorldRenderer {
     if (g.isGameStarted || g.gameOver) {
       this.drawToxicTrails(ctx, g.toxicTrails);
       
-      // FIXED: Call the function directly from the injected engine service reference instance
-      const visibleEnemies = g.deathAnimation.getVisibleEnemies(g.enemies);
+      const visibleEnemies = g.gameOverService.getAnimationEnemies(g.enemies);
       const groundEnemies = visibleEnemies.filter((e: any) => !e.isFlying);
       
       this.drawEnemiesWithBars(ctx, groundEnemies, player, g.bullets);
@@ -39,7 +39,7 @@ export class DiepWorldRenderer {
 
     // 4. Layer: Flying Entities (Drawn over walls)
     if (g.isGameStarted || g.gameOver) {
-      const visibleEnemies = g.deathAnimation.getVisibleEnemies(g.enemies);
+      const visibleEnemies = g.gameOverService.getAnimationEnemies(g.enemies);
       const flyingEnemies = visibleEnemies.filter((e: any) => e.isFlying);
       if (flyingEnemies.length > 0) {
         this.drawEnemiesWithBars(ctx, flyingEnemies, player, g.bullets);
