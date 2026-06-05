@@ -1,19 +1,19 @@
 // src/app/diep/engine/subsystems/diep.collision.service.ts
 import { Injectable } from '@angular/core';
 import { Player, Bullet, Enemy, GameSystem } from '../../core/diep.interfaces';
-import { EnemySpawnerService } from '../../enemies/diep.enemy-spawner';
 import { DiepGameEngineService } from '../diep.game-engine.service';
 import { DiepPlayerService } from './diep.player.service';
 import { DiepStatsService } from '../../core/diep.stats.service';
 import { DiepEnvironmentCollisionService } from './arena/arena.environment-collision';
+import { DiepCombatResolverService } from './diep.combat-resolver.service';
 
 @Injectable({ providedIn: 'root' })
 export class DiepCollisionService implements GameSystem {
     constructor(
-        private spawner: EnemySpawnerService,
         private playerService: DiepPlayerService,
         private diepStatsService: DiepStatsService,
-        private envCollisionService: DiepEnvironmentCollisionService
+        private envCollisionService: DiepEnvironmentCollisionService,
+        private combatResolverService: DiepCombatResolverService
     ) {}
 
     /**
@@ -23,7 +23,7 @@ export class DiepCollisionService implements GameSystem {
     public update(engine: DiepGameEngineService, tick: number, ms: number): void {
         const activePlayer = this.playerService.player;
 
-        // 1. Check entity collisions against environment tiles using the delegated service
+        // 1. Check entity collisions against environment tiles
         this.envCollisionService.handleEnvironmentCollision(activePlayer);
         engine.enemies.forEach(e => this.envCollisionService.handleEnvironmentCollision(e));
         
@@ -65,137 +65,21 @@ export class DiepCollisionService implements GameSystem {
         enemies: Enemy[],
         onKillEnemy: (enemy: Enemy) => void
     ) {
-        this.handleBulletVsBullet(bullets);
-
         // Lazily bridge wave manager telemetry backplane access via engine instantiation references
         if (engine.waveManager && !(engine.waveManager as any).diepStatsService) {
             (engine.waveManager as any).diepStatsService = this.diepStatsService;
         }
 
-        bullets.forEach(bullet => {
-            if (bullet.ownerType !== 'PLAYER' || bullet.health <= 0) return;
-            enemies.forEach(enemy => {
-                if (enemy.isGhost || enemy.health <= 0 || bullet.health <= 0) return;
-                const dist = this.getDist(bullet, enemy);
-                const combinedRadius = bullet.radius + enemy.radius;
-
-                if (dist < combinedRadius) {
-                    this.resolveHealthTrade(bullet, enemy, true);
-                    
-                    // Track that a player weapon projectile successfully hit a target
-                    this.diepStatsService.recordShotHit();
-
-                    if (enemy.onHit) enemy.onHit(enemies, this.spawner, bullet);
-                    if (enemy.health <= 0) {
-                        if (enemy.onDeath) enemy.onDeath(enemies, this.spawner, enemy, player);
-                        
-                        // Increment session counter tracker on the core engine instance safely
-                        engine.sessionKills++;
-                        
-                        // Register telemetry matrix kill data (handles achievements dynamically downstream)
-                        this.diepStatsService.recordKill(enemy.type, enemy, engine.sessionKills);
-                        
-                        onKillEnemy(enemy);
-                    }
-                    const angle = Math.atan2(bullet.y - enemy.y, bullet.x - enemy.x);
-                    const overlap = combinedRadius - dist;
-                    bullet.dx += Math.cos(angle) * overlap * 0.3; 
-                    bullet.dy += Math.sin(angle) * overlap * 0.3;
-                    enemy.vx -= Math.cos(angle) * overlap * 0.05; 
-                    enemy.vy -= Math.sin(angle) * overlap * 0.05;
-                }
-            });
-        });
-
-        bullets.forEach(bullet => {
-            if (bullet.ownerType !== 'ENEMY' || bullet.health <= 0) return;
-            const dist = this.getDist(bullet, player);
-            if (dist < bullet.radius + player.radius) {
-                this.resolveHealthTrade(bullet, player, false);
-                player.vx += bullet.dx * 0.01;
-                player.vy += bullet.dy * 0.01;
-            }
-        });
-
-        enemies.forEach(enemy => {
-            if (enemy.isGhost || enemy.health <= 0) return;
-            const dist = this.getDist(player, enemy);
-            const combinedRadius = enemy.radius + player.radius;
-            if (dist < combinedRadius) {
-                this.resolveHealthTrade(player, enemy, true);
-                if (enemy.health <= 0 && !enemy.isInvulnerable) {
-                    if (enemy.onDeath) enemy.onDeath(enemies, this.spawner, enemy, player);
-                    
-                    // Increment session counter tracker on ram kill
-                    engine.sessionKills++;
-                    
-                    // Register telemetry matrix kill data for ram kills
-                    this.diepStatsService.recordKill(enemy.type, enemy.color || '', engine.sessionKills);
-                    
-                    onKillEnemy(enemy);
-                }
-                this.applyOverlapPush(player, enemy, dist, combinedRadius, 0.4);
-            }
-        });
-
-        for (let i = 0; i < enemies.length; i++) {
-            for (let j = i + 1; j < enemies.length; j++) {
-                const e1 = enemies[i]; const e2 = enemies[j];
-                if (e1.health <= 0 || e2.health <= 0 || e1.isGhost || e2.isGhost) continue;
-                const dist = this.getDist(e1, e2);
-                const combinedRadius = e1.radius + e2.radius;
-                if (dist < combinedRadius) {
-                    this.applyOverlapPush(e1, e2, dist, combinedRadius, 0.25);
-                }
-            }
-        }
+        // Delegate discrete collision layers to specialized combat solver handlers
+        this.combatResolverService.handleBulletVsBullet(bullets);
+        this.combatResolverService.handleBulletVsEnemy(engine, player, bullets, enemies, onKillEnemy);
+        this.combatResolverService.handleBulletVsPlayer(bullets, player);
+        this.combatResolverService.handleEnemyVsPlayer(engine, player, enemies, onKillEnemy);
+        this.combatResolverService.handleEnemyVsEnemy(enemies);
 
         return {
             bullets: bullets.filter(b => b.health > 0),
             enemies: enemies.filter(e => e.health > 0 || e.isInvulnerable)
         };
-    }
-
-    private applyOverlapPush(a: any, b: any, dist: number, combinedRadius: number, strength: number) {
-        const angle = Math.atan2(b.y - a.y, b.x - a.x);
-        const overlap = combinedRadius - dist;
-        const weightA = b.radius / (a.radius + b.radius);
-        const weightB = a.radius / (a.radius + b.radius);
-        a.vx -= Math.cos(angle) * overlap * strength * weightA;
-        a.vy -= Math.sin(angle) * overlap * strength * weightA;
-        b.vx += Math.cos(angle) * overlap * strength * weightB;
-        b.vy += Math.sin(angle) * overlap * strength * weightB;
-    }
-
-    private resolveHealthTrade(a: any, b: any, isPlayerSource: boolean = false) {
-        const dmgToA = (b.damage || b.bodyDamage || 15);
-        const dmgToB = (a.damage || a.bodyDamage || 15);
-        
-        // Track running cumulative damage dealt whenever the source object is a player weapon or player body
-        if (isPlayerSource && !b.isInvulnerable) {
-            const actualDamageApplied = Math.min(b.health, dmgToB);
-            if (actualDamageApplied > 0) {
-                this.diepStatsService.recordDamageDealt(actualDamageApplied);
-            }
-        }
-
-        a.health -= dmgToA;
-        if (!b.isInvulnerable) b.health -= dmgToB;
-    }
-
-    private handleBulletVsBullet(bullets: Bullet[]) {
-        for (let i = 0; i < bullets.length; i++) {
-            for (let j = i + 1; j < bullets.length; j++) {
-                const b1 = bullets[i]; const b2 = bullets[j];
-                if (b1.ownerType === b2.ownerType || b1.health <= 0 || b2.health <= 0) continue;
-                if (this.getDist(b1, b2) < b1.radius + b2.radius) {
-                    this.resolveHealthTrade(b1, b2, false);
-                }
-            }
-        }
-    }
-
-    private getDist(obj1: any, obj2: any): number {
-        return Math.sqrt(Math.pow(obj1.x - obj2.x, 2) + Math.pow(obj1.y - obj2.y, 2));
     }
 }
