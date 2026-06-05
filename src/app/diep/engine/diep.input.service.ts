@@ -42,9 +42,6 @@ export class DiepInputService {
     }
 
     if ((key === 'k') && !this.gameEngine.mouseAiming) {
-      const g = this.gameEngine;
-      const activePlayer = this.playerService.player;
-      this.weaponController.shootBullet(activePlayer, g.mousePos, g.mouseAiming, g.lastAngle, g.bullets);
       event.preventDefault();
     }
 
@@ -119,10 +116,8 @@ export class DiepInputService {
       canvas.focus();
     } else {
       const g = this.gameEngine;
-      const activePlayer = this.playerService.player;
       if (g.mouseAiming && event.button === 0 && !g.isPaused && !g.gameOver && g.isGameStarted) {
         g.mouseDown = true;
-        this.weaponController.shootBullet(activePlayer, g.mousePos, g.mouseAiming, g.lastAngle, g.bullets);
       }
     }
   }

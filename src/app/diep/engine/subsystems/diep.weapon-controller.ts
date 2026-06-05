@@ -13,22 +13,35 @@ export class DiepWeaponController {
     constructor(private diepStatsService: DiepStatsService) {}
 
     /**
-     * Evaluates firing conditions and appends weapon projectiles with recoil force application.
+     * Ticks the internal shooting weapon clock and processes firing commands if requested.
      */
-    public shootBullet(
+    public updateWeapon(
+        deltaTime: number,
+        isTryingToShoot: boolean,
         player: Player, 
         mousePos: { x: number; y: number }, 
         mouseAiming: boolean, 
         lastAngle: number, 
         bullets: Bullet[]
     ): void {
-        this.shotTimer += DiepTimeManager.gameMs;
-        
         const fireDelay = 1000 / player.fireRate;
 
+        // Continuously run the weapon cooldown in the background
+        if (this.shotTimer < fireDelay) {
+            this.shotTimer += deltaTime;
+        }
+
+        // Clamp the timer to the fire delay threshold so extra idle time isn't stored
+        if (this.shotTimer > fireDelay) {
+            this.shotTimer = fireDelay;
+        }
+
+        // Guard against firing checks if player isn't actively pressing keys/mouse triggers
+        if (!isTryingToShoot) return;
         if (this.shotTimer < fireDelay) return;
         
-        this.shotTimer = 0; 
+        // Consume the delay amount instead of wiping to 0 so fractional frame time carries over
+        this.shotTimer -= fireDelay; 
 
         const angle = mouseAiming 
             ? Math.atan2(mousePos.y - player.y, mousePos.x - player.x) 

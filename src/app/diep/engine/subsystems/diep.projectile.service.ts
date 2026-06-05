@@ -19,9 +19,20 @@ export class DiepProjectileService implements GameSystem {
     public update(engine: DiepGameEngineService, tick: number, ms: number): void {
         const activePlayer = this.playerService.player;
 
-        // Handle automated shooting checked from the input state through the weapon sub-controller
-        if (engine.mouseAiming && engine.mouseDown && activePlayer && activePlayer.health > 0) {
-            this.weaponController.shootBullet(activePlayer, engine.mousePos, engine.mouseAiming, engine.lastAngle, engine.bullets);
+        if (activePlayer && activePlayer.health > 0) {
+            // Firing is active if holding mouse during mouseAiming, OR holding 'k' when mouseAiming is disabled
+            const isTryingToShoot = (engine.mouseAiming && engine.mouseDown) || (!engine.mouseAiming && engine.keys['k']);
+
+            // Constantly update the weapon subsystem so cooldown clocks track fluidly
+            this.weaponController.updateWeapon(
+                ms,
+                isTryingToShoot,
+                activePlayer,
+                engine.mousePos,
+                engine.mouseAiming,
+                engine.lastAngle,
+                engine.bullets
+            );
         }
 
         engine.bullets = this.updateBullets(
