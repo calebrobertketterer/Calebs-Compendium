@@ -60,7 +60,8 @@ export class DiepShopManagerService {
 
     // 3. Run specialized dynamic NPC looking loops and solid circle pushing collision fields
     if (p) {
-      DiepShopPhysicsProcessor.process(g, p, g.bullets, tick);
+      // FIXED: Added the missing 'ms' argument down into the physics orchestrator execution parameters
+      DiepShopPhysicsProcessor.process(g, p, g.bullets, tick, ms);
     }
     
     // 4. Contain player within the strict bounds of the view map layout
