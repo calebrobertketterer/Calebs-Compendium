@@ -1,9 +1,9 @@
 // src/app/diep/engine/subsystems/shop/shop.manager.ts
 import { Injectable } from '@angular/core';
 import { Player } from '../../../core/diep.interfaces';
-import { DiepShopNpcBehaviorEngine } from './shop-npc.behavior';
 import { DiepShopRenderer } from './shop-renderer';
 import { DiepShopPhysicsProcessor } from './shop-physics.processor';
+import { DiepShopNpcInitializer } from './shop-npc.initializer';
 
 @Injectable({
   providedIn: 'root'
@@ -29,8 +29,8 @@ export class DiepShopManagerService {
         p.y = g.height * 0.85;
       }
 
-      // Delegate random trait generation to behavior subsystem context
-      DiepShopNpcBehaviorEngine.initializeDynamicNpcs();
+      // FIXED: Point to the isolated lifecycle initializer class
+      DiepShopNpcInitializer.initializeDynamicNpcs();
       
       g.arenaReset.transition.fadeIn();
     });

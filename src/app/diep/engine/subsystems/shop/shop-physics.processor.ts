@@ -1,7 +1,7 @@
 // src/app/diep/engine/subsystems/shop/shop-physics.processor.ts
 import { Player, Bullet } from '../../../core/diep.interfaces';
 import { DIEP_SHOP_NPCS } from './shop-npc.config';
-import { DiepShopNpcBehaviorEngine } from './shop-npc.behavior'; // Import behavior system
+import { DiepShopNpcBehaviorEngine } from './shop-npc.behavior'; 
 
 export class DiepShopPhysicsProcessor {
   /**
@@ -29,7 +29,6 @@ export class DiepShopPhysicsProcessor {
         const nx = dx / distToPlayer;
         const ny = dy / distToPlayer;
 
-        // Push player tank away out of the solid vendor body bounds immediately
         player.x += nx * overlap;
         player.y += ny * overlap;
       }
@@ -42,7 +41,7 @@ export class DiepShopPhysicsProcessor {
         const bDist = Math.sqrt(bDx * bDx + bDy * bDy);
 
         if (bDist < npc.radius + (b.radius || 10)) {
-          b.health = 0; // Vaporize round immediately upon vendor contact
+          b.health = 0; 
         }
       }
     }
