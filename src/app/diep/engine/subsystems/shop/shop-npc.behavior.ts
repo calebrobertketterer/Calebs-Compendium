@@ -1,5 +1,6 @@
 // src/app/diep/engine/subsystems/shop/shop-npc.behavior.ts
 import { DIEP_SHOP_NPCS, DiepShopNpc } from './shop-npc.config';
+import { REGISTERED_SHOP_VENDORS } from './vendors';
 
 export class DiepShopNpcBehaviorEngine {
   // --- AI Tuning & Weight Adjustments ---
@@ -33,6 +34,7 @@ export class DiepShopNpcBehaviorEngine {
   // Session-based persistence caches
   private static sessionColorCache = new Map<string, { base: string; accent: string }>();
   private static sessionSizeCache = new Map<string, number>();
+  private static sessionPositionCache = new Map<string, { x: number; y: number }>();
 
   private static COLOR_PALETTES = [
     { base: '#3498db', accent: '#2980b9' }, 
@@ -49,8 +51,45 @@ export class DiepShopNpcBehaviorEngine {
    */
   public static initializeDynamicNpcs(): void {
     for (const npc of DIEP_SHOP_NPCS) {
+      // 1. Core behavior state assignments (shuffles setup on every entry pass)
       npc.behaviorType = Math.random() > 0.5 ? 'WANDER' : 'STAND';
 
+      // 2. Persistent Session Positioning Logic
+      let isFirstTimeThisSession = !this.sessionPositionCache.has(npc.id);
+
+      if (isFirstTimeThisSession) {
+        // First time opening the page this session -> find their structural home coordinate
+        const profile = REGISTERED_SHOP_VENDORS.find(v => v.id === npc.id);
+        
+        let startupX = npc.x;
+        let startupY = npc.y;
+
+        if (profile) {
+          // If the profile lacks an explicit coordinate layout, map standard random fallbacks
+          startupX = profile.initialX !== undefined ? profile.initialX : (Math.random() * 0.6 + 0.2);
+          startupY = profile.initialY !== undefined ? profile.initialY : (Math.random() * 0.4 + 0.4);
+        }
+
+        this.sessionPositionCache.set(npc.id, { x: startupX, y: startupY });
+      }
+
+      // Restore their exact coordinate location from the session cache
+      const cachedPos = this.sessionPositionCache.get(npc.id)!;
+      npc.x = cachedPos.x;
+      npc.y = cachedPos.y;
+      
+      // FIXED: Compute default orientation angle facing your bottom-center player spawn point (0.5, 0.85)
+      if (isFirstTimeThisSession) {
+        const deltaX = 0.5 - npc.x;
+        const deltaY = 0.85 - npc.y;
+        const angleToPlayerSpawn = Math.atan2(deltaY, deltaX);
+        
+        npc.currentAngle = angleToPlayerSpawn;
+        npc.targetAngle = angleToPlayerSpawn;
+        npc.lastHeadingAngle = angleToPlayerSpawn;
+      }
+
+      // Clear momentary kinematics vectors so they don't violently jump when the engine resumes ticks
       npc.vx = 0;
       npc.vy = 0;
       npc.wanderState = 'IDLE';
@@ -58,7 +97,7 @@ export class DiepShopNpcBehaviorEngine {
       npc.focusedNpcId = null;
       npc.interactionTimer = 0;
 
-      // Session Size
+      // 3. Session Size
       if (!this.sessionSizeCache.has(npc.id)) {
         const config = this.TYPE_SIZE_CONFIGS[npc.type] || this.TYPE_SIZE_CONFIGS['ABILITIES'];
         const delta = config.MAX_RADIUS - config.MIN_RADIUS;
@@ -67,7 +106,7 @@ export class DiepShopNpcBehaviorEngine {
       }
       npc.radius = this.sessionSizeCache.get(npc.id)!;
 
-      // Session Color
+      // 4. Session Color
       if (!this.sessionColorCache.has(npc.id)) {
         const randomPalette = this.COLOR_PALETTES[Math.floor(Math.random() * this.COLOR_PALETTES.length)];
         this.sessionColorCache.set(npc.id, randomPalette);
@@ -98,6 +137,9 @@ export class DiepShopNpcBehaviorEngine {
 
     npc.x += (npc.vx / g.width) * tick;
     npc.y += (npc.vy / g.height) * tick;
+
+    // Keep the cache updated with real-time vector transformations as they travel
+    this.sessionPositionCache.set(npc.id, { x: npc.x, y: npc.y });
 
     this.processLookingOrientation(npc, g, g.width * npc.x, g.height * npc.y, playerX, playerY, tick);
   }

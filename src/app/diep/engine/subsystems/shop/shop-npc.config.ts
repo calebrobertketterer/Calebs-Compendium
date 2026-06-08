@@ -1,96 +1,66 @@
 // src/app/diep/engine/subsystems/shop/shop-npc.config.ts
+import { REGISTERED_SHOP_VENDORS, DiepVendorProfile } from './vendors';
 
 export interface DiepShopNpc {
   id: string;
   name: string;
   subtitle: string;
-  type: 'GENERAL' | 'WEAPONS' | 'COSMETICS' | 'ABILITIES';
-  x: number;       
-  y: number;       
-  radius: number;
-  baseColor: string;
-  accentColor: string;
+  type: DiepVendorProfile['type'];
   
-  // Real-time orientation properties
+  // Real-time grid vector scalars
+  x: number;
+  y: number;
+  vx: number;
+  vy: number;
+  radius: number;
+  
+  // Structural Look Angle Interpolations
   currentAngle: number;
   targetAngle: number;
-  defaultAngle: number;
-  lastHeadingAngle: number; 
-
-  // Behavior Engine Tracking
-  behaviorType: 'STAND' | 'WANDER';
-  vx: number;               
-  vy: number;               
-  wanderTargetX?: number;   
-  wanderTargetY?: number;
-  wanderTimer?: number;     
-  wanderState?: 'IDLE' | 'MOVING_TO_STALL' | 'MOVING_AIMLESS';
+  lastHeadingAngle: number;
   
-  // NEW: Cooldown tracking to break vendor-to-vendor standoffs
-  interactionTimer?: number;
-  focusedNpcId?: string | null;
+  // Runtime AI State parameters
+  behaviorType: 'WANDER' | 'STAND';
+  wanderState: 'IDLE' | 'MOVING_AIMLESS' | 'MOVING_TO_STALL';
+  wanderTimer: number;
+  wanderTargetX?: number;
+  wanderTargetY?: number;
+  
+  // Conversational focus constraints
+  focusedNpcId: string | null;
+  interactionTimer: number;
+  
+  // Cosmetic Style rendering cache pairs
+  baseColor: string;
+  accentColor: string;
 }
 
-export const DIEP_SHOP_NPCS: DiepShopNpc[] = [
-  {
-    id: 'npc-general-vendor',
-    name: 'GENERAL VENDOR',
-    subtitle: 'Supplies & Items',
-    type: 'GENERAL',
-    x: 0.5,
-    y: 0.32,
-    radius: 25,
-    baseColor: '#3498db',
-    accentColor: '#2980b9',
-    currentAngle: Math.PI / 2,
-    targetAngle: Math.PI / 2,
-    defaultAngle: Math.PI / 2,
-    lastHeadingAngle: Math.PI / 2,
-    behaviorType: 'STAND', 
-    vx: 0, vy: 0,
-    interactionTimer: 0,
-    focusedNpcId: null
-  },
-  {
-    id: 'npc-arms-dealer',
-    name: 'ARMS DEALER',
-    subtitle: 'Barrels & Firepower',
-    type: 'WEAPONS',
-    x: 0.20,
-    y: 0.65,
-    radius: 28,
-    baseColor: '#e74c3c',
-    accentColor: '#c0392b',
+// Automatically transform drop-in records into live runtime array objects
+export const DIEP_SHOP_NPCS: DiepShopNpc[] = REGISTERED_SHOP_VENDORS.map(v => {
+  // Safe default on-screen spawn boundaries (e.g., 20% to 80% of screen space)
+  const fallbackX = Math.random() * 0.6 + 0.2;
+  const fallbackY = Math.random() * 0.4 + 0.4;
+
+  return {
+    id: v.id,
+    name: v.name,
+    subtitle: v.subtitle,
+    type: v.type,
+    // Use configured coordinates if defined, otherwise apply automated fallbacks
+    x: v.initialX !== undefined ? v.initialX : fallbackX,
+    y: v.initialY !== undefined ? v.initialY : fallbackY,
+    vx: 0,
+    vy: 0,
+    radius: 20, 
     currentAngle: 0,
     targetAngle: 0,
-    defaultAngle: 0,
     lastHeadingAngle: 0,
-    behaviorType: 'WANDER', 
-    vx: 0, vy: 0,
-    wanderTimer: 0,
+    behaviorType: 'STAND',
     wanderState: 'IDLE',
-    interactionTimer: 0,
-    focusedNpcId: null
-  },
-  {
-    id: 'npc-tailor',
-    name: 'STYLIST MERCH',
-    subtitle: 'Skins & Cosmetics',
-    type: 'COSMETICS',
-    x: 0.80,
-    y: 0.65,
-    radius: 22,
-    baseColor: '#9b59b6',
-    accentColor: '#8e44ad',
-    currentAngle: Math.PI,
-    targetAngle: Math.PI,
-    defaultAngle: Math.PI,
-    lastHeadingAngle: Math.PI,
-    behaviorType: 'WANDER', 
-    vx: 0, vy: 0,
     wanderTimer: 0,
-    wanderState: 'IDLE',
+    focusedNpcId: null,
     interactionTimer: 0,
-    focusedNpcId: null
-  }
-];
+    baseColor: '#95a5a6',
+    accentColor: '#7f8c8d'
+  };
+});
