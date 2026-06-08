@@ -4,6 +4,7 @@ import { DiepAchievementMenu } from './main-menu/achievements/diep.achievement-m
 import { DiepMainMenu } from './main-menu/diep.main-menu';
 import { DiepPauseOverlay } from './overlays/pause-overlay';
 import { DiepGameOverOverlay } from './overlays/game-over-overlay';
+import { DiepShopOverlay } from './overlays/shop-overlay';
 
 export class DiepMenus {
   /**
@@ -23,6 +24,8 @@ export class DiepMenus {
         DiepPauseOverlay.draw(ctx, g, width, height);
       } else if (g.gameOver && !g.gameOverService.isAnimationActive()) {
         DiepGameOverOverlay.draw(ctx, g, width, height);
+      } else if (g.currentMode === 'SHOP') {
+        DiepShopOverlay.draw(ctx, g, width, height);
       }
     }
 

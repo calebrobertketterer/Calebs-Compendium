@@ -8,6 +8,7 @@ import { DiepAchievementNavigator } from '../main-menu/achievements/diep.achieve
 import { DiepMainMenu } from '../main-menu/diep.main-menu';
 import { DiepPauseOverlay } from '../overlays/pause-overlay';
 import { DiepGameOverOverlay } from '../overlays/game-over-overlay';
+import { DiepShopOverlay } from '../overlays/shop-overlay'; // Added Shop Overlay Import
 import { DiepHealthBarRenderer } from '../hud/diep.health-bar-renderer';
 import { DiepUpgradeMenuRenderer } from '../hud/upgrade-menu/diep.upgrade-menu-renderer';
 import { DiepPlayerService } from '../../engine/subsystems/player/diep.player.service';
@@ -32,7 +33,7 @@ export class DiepInteractionService {
     const { width, height } = g;
     const player = this.playerService.player;
 
-    if (g.isGameStarted && !g.gameOver && !g.showingQuadrivium && !g.showingAchievements) {
+    if (g.currentMode === 'ARENA' && g.isGameStarted && !g.gameOver && !g.showingQuadrivium && !g.showingAchievements) {
       const dist = Math.sqrt(Math.pow(mouseX - width / 2, 2) + Math.pow(mouseY - 35, 2));
       if (dist < 20) {
         const wasPaused = g.togglePause();
@@ -48,15 +49,18 @@ export class DiepInteractionService {
     } else if (g.showingAchievements) {
       activeButtons = DiepAchievementMenu.getButtons(g, width, height);
       activeButtons.push(...DiepAchievementNavigator.getButtons(g, width));
-    } else if (!g.isGameStarted) {
+    } else if (g.currentMode === 'MENU' && !g.isGameStarted) {
       activeButtons = DiepMainMenu.getButtons(g, width, height);
     } else if (g.isPaused) {
       activeButtons = DiepPauseOverlay.getButtons(g, width, height);
     } else if (g.gameOver && !g.gameOverService.isAnimationActive()) {
       activeButtons = DiepGameOverOverlay.getButtons(g, width, height);
+    } else if (g.currentMode === 'SHOP' && !g.isPaused) {
+      // Monitor custom Shop UI interaction paths exclusively when active and unpaused
+      activeButtons = DiepShopOverlay.getButtons(g, width, height);
     }
 
-    if (g.isGameStarted && !g.isPaused && !g.gameOver && !g.showingQuadrivium && !g.showingAchievements) {
+    if (g.currentMode === 'ARENA' && g.isGameStarted && !g.isPaused && !g.gameOver && !g.showingQuadrivium && !g.showingAchievements) {
       activeButtons.push(DiepHealthBarRenderer.getButton());
       const upgradeButtons = DiepUpgradeMenuRenderer.getButtons(g, player, height);
       activeButtons.push(...upgradeButtons);

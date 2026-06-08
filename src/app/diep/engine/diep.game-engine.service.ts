@@ -16,6 +16,7 @@ import { AchievementService } from '../core/diep.achievement.service';
 import { HighScoresService } from '../core/diep.high-scores.service';
 import { EnemySpawnerService } from '../enemies/diep.enemy-spawner';
 import { DiepStatsService } from '../core/diep.stats.service';
+import { DiepShopManagerService } from './subsystems/shop/shop.manager';
 
 @Injectable({ providedIn: 'root' })
 export class DiepGameEngineService {
@@ -40,6 +41,7 @@ export class DiepGameEngineService {
     public isGameStarted = false;
     public topScores: HighScore[] = [];
 
+    public currentMode: 'MENU' | 'ARENA' | 'SHOP' = 'MENU';
     public currentDifficulty: DifficultyMode = 'MEDIUM';
     public persistentXp = 0;
 
@@ -48,7 +50,6 @@ export class DiepGameEngineService {
     public onRenderCallback: () => void = () => {};
 
     public arenaEnabled = true;
-
     private systems: GameSystem[] = [];
 
     constructor(
@@ -65,7 +66,8 @@ export class DiepGameEngineService {
         public hazardDirector: DiepFloorDirector,
         public arenaReset: DiepArenaResetService,
         public gameOverService: DiepGameOverService,
-        public diepStatsService: DiepStatsService
+        public diepStatsService: DiepStatsService,
+        public shopManagerService: DiepShopManagerService
     ) {
         this.playerService.initializePlayer(this.currentDifficulty, this.persistentXp);
         this.topScores = this.highScoresService.getHighScores();
@@ -81,7 +83,6 @@ export class DiepGameEngineService {
             this.gameOverService
         ];
 
-        // Mirror service property to engine instance for easy menu rendering extraction
         (this as any).diepStatsService = this.diepStatsService;
     }
 
@@ -106,17 +107,20 @@ export class DiepGameEngineService {
 
     public update() {
         const F = DiepTimeManager.gameTick;
-        
         this.arenaReset.updateTransition();
 
-        for (const system of this.systems) {
-            system.update(this, F, DiepTimeManager.gameMs);
-        }
+        if (this.currentMode === 'SHOP') {
+            this.shopManagerService.updateShop(this, F, DiepTimeManager.gameMs);
+        } else {
+            for (const system of this.systems) {
+                system.update(this, F, DiepTimeManager.gameMs);
+            }
 
-        if (this.isGameStarted && !this.isPaused && !this.gameOver) {
-            this.waveManager.updateWaves(this.enemies, this.width, this.height);
-            this.achievementService.updateProgress('WAVE', this.waveManager.waveCount);
-            this.diepStatsService.trackTime(DiepTimeManager.gameMs / 1000);
+            if (this.isGameStarted && !this.isPaused && !this.gameOver) {
+                this.waveManager.updateWaves(this.enemies, this.width, this.height);
+                this.achievementService.updateProgress('WAVE', this.waveManager.waveCount);
+                this.diepStatsService.trackTime(DiepTimeManager.gameMs / 1000);
+            }
         }
     }
 
@@ -126,5 +130,9 @@ export class DiepGameEngineService {
             if (!this.isPaused) this.startTicker(this.onRenderCallback);
         }
         return this.isPaused; 
+    }
+
+    public enterShopMode(): void {
+        this.shopManagerService.transitionToShop(this);
     }
 }

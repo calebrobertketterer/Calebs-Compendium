@@ -61,6 +61,13 @@ export class DiepArenaResetService {
         engine.lastAngle = 0; 
         engine.isGameStarted = startGameImmediately;
         engine.isStartingNewGame = startGameImmediately;
+
+        // Sync mode variables explicitly so the scene selector router can never desync
+        if (startGameImmediately) {
+            engine.currentMode = 'ARENA';
+        } else {
+            engine.currentMode = 'MENU';
+        }
         
         engine.waveManager.reset();
         this.weaponController.resetCooldown();
