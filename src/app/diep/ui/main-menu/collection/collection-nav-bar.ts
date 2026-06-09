@@ -6,7 +6,7 @@ export class DiepCollectionNavigator {
   public static activeTabIndex = 0;
 
   private static tabSpacing = 140;
-  private static tabY = 110; // Shifted down an additional 10px from 112
+  private static tabY = 110;
 
   // Transition parameters following your exact Quadrivium timing mechanics
   public static isTransitioning = false;
