@@ -30,6 +30,7 @@ export class DiepGameEngineService {
     public sessionKills = 0; 
     public showingQuadrivium = false;
     public showingAchievements = false;
+    public showingCollection = false;
     public gameOver = false;
     public isPaused = false;
     public isDarkMode = true;

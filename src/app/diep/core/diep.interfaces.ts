@@ -1,3 +1,5 @@
+// src/app/diep/core/diep.interfaces.ts
+
 export type OwnerType = 'PLAYER' | 'ENEMY'; 
 export type DifficultyMode = 'EASY' | 'MEDIUM' | 'HARD';
 
@@ -31,6 +33,9 @@ export interface Player {
   upgrades: Record<string, number>;
   progression: PlayerProgression;
   isFlying?: boolean;
+  
+  // Cleanly encapsulated inventory tracking setup
+  inventory: PlayerInventory;
 }
 
 export interface Bullet {
@@ -168,4 +173,27 @@ export interface Achievement {
 
 export interface GameSystem {
   update(engine: any, tick: number, ms: number): void;
+}
+
+// --- Player Collection / Inventory Layouts ---
+
+export type ItemType = 'ATTACHMENT' | 'CHASSIS_PERK';
+
+export interface InventoryItem {
+  id: string;
+  name: string;
+  description: string;
+  quantity: number;
+  maxStack: number;
+  type: ItemType;
+  /**
+   * Vector rendering callback executing contextual canvas logic inside the grid cell boundaries.
+   */
+  drawIllustration: (ctx: CanvasRenderingContext2D, x: number, y: number, size: number, frame: number) => void;
+}
+
+export interface PlayerInventory {
+  slots: InventoryItem[];
+  maxSlots: number;
+  pixels: number; // Retrorock asset currency tracker
 }

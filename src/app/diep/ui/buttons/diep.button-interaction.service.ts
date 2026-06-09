@@ -5,10 +5,11 @@ import { DiepButton } from '../../core/diep.interfaces';
 import { DiepQuadriviumMenu } from '../main-menu/quadrivium/diep.quadrivium-menu';
 import { DiepAchievementMenu } from '../main-menu/achievements/diep.achievement-menu';
 import { DiepAchievementNavigator } from '../main-menu/achievements/diep.achievement-nav-bar';
+import { DiepCollectionMenu } from '../main-menu/collection/collection-menu';
 import { DiepMainMenu } from '../main-menu/diep.main-menu';
 import { DiepPauseOverlay } from '../overlays/pause-overlay';
 import { DiepGameOverOverlay } from '../overlays/game-over-overlay';
-import { DiepShopOverlay } from '../overlays/shop-overlay'; // Added Shop Overlay Import
+import { DiepShopOverlay } from '../overlays/shop-overlay'; 
 import { DiepHealthBarRenderer } from '../hud/diep.health-bar-renderer';
 import { DiepUpgradeMenuRenderer } from '../hud/upgrade-menu/diep.upgrade-menu-renderer';
 import { DiepPlayerService } from '../../engine/subsystems/player/diep.player.service';
@@ -33,7 +34,7 @@ export class DiepInteractionService {
     const { width, height } = g;
     const player = this.playerService.player;
 
-    if (g.currentMode === 'ARENA' && g.isGameStarted && !g.gameOver && !g.showingQuadrivium && !g.showingAchievements) {
+    if (g.currentMode === 'ARENA' && g.isGameStarted && !g.gameOver && !g.showingQuadrivium && !g.showingAchievements && !g.showingCollection) {
       const dist = Math.sqrt(Math.pow(mouseX - width / 2, 2) + Math.pow(mouseY - 35, 2));
       if (dist < 20) {
         const wasPaused = g.togglePause();
@@ -44,11 +45,15 @@ export class DiepInteractionService {
 
     let activeButtons: DiepButton[] = [];
 
+    // Prioritize checking active overlay menus first to block background bleed clicks
     if (g.showingQuadrivium) {
       activeButtons = DiepQuadriviumMenu.getButtons(g, width, height);
     } else if (g.showingAchievements) {
       activeButtons = DiepAchievementMenu.getButtons(g, width, height);
       activeButtons.push(...DiepAchievementNavigator.getButtons(g, width));
+    } else if (g.showingCollection) {
+      // Wire up the new collection view buttons natively to prevent bleed-through
+      activeButtons = DiepCollectionMenu.getButtons(g, width, height);
     } else if (g.currentMode === 'MENU' && !g.isGameStarted) {
       activeButtons = DiepMainMenu.getButtons(g, width, height);
     } else if (g.isPaused) {
@@ -56,11 +61,10 @@ export class DiepInteractionService {
     } else if (g.gameOver && !g.gameOverService.isAnimationActive()) {
       activeButtons = DiepGameOverOverlay.getButtons(g, width, height);
     } else if (g.currentMode === 'SHOP' && !g.isPaused) {
-      // Monitor custom Shop UI interaction paths exclusively when active and unpaused
       activeButtons = DiepShopOverlay.getButtons(g, width, height);
     }
 
-    if (g.currentMode === 'ARENA' && g.isGameStarted && !g.isPaused && !g.gameOver && !g.showingQuadrivium && !g.showingAchievements) {
+    if (g.currentMode === 'ARENA' && g.isGameStarted && !g.isPaused && !g.gameOver && !g.showingQuadrivium && !g.showingAchievements && !g.showingCollection) {
       activeButtons.push(DiepHealthBarRenderer.getButton());
       const upgradeButtons = DiepUpgradeMenuRenderer.getButtons(g, player, height);
       activeButtons.push(...upgradeButtons);
