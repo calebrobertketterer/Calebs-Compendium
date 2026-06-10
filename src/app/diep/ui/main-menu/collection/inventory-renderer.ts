@@ -1,5 +1,6 @@
 // src/app/diep/ui/main-menu/collection/inventory-renderer.ts
 import { DiepButton } from '../../../core/diep.interfaces';
+import { ItemPreviewRenderer } from './item-preview.renderer';
 
 export class InventoryRenderer {
   private static selectedIndex: number = 0;
@@ -50,49 +51,16 @@ export class InventoryRenderer {
       }
     }
 
-    // Render Inspection Right-Side Info Overlay Box
+    // Calculate dimensions for Inspection Right-Side Info Overlay Box Layout
     const panelX = gridStartX + columns * (slotSize + gap) + 20;
     const panelY = gridStartY;
     const panelW = width - panelX - 50;
     const panelH = inv.maxSlots / columns * (slotSize + gap) - gap;
 
-    ctx.fillStyle = '#161616';
-    ctx.strokeStyle = '#2d2d2d';
-    ctx.lineWidth = 2;
-    ctx.beginPath();
-    ctx.roundRect(panelX, panelY, panelW, panelH, 12);
-    ctx.fill();
-    ctx.stroke();
-
     const selectedItem = this.selectedIndex < inv.slots.length ? inv.slots[this.selectedIndex] : null;
 
-    if (selectedItem) {
-      ctx.fillStyle = '#ffffff';
-      ctx.font = 'bold 22px Inter, sans-serif';
-      ctx.textAlign = 'left';
-      ctx.fillText(selectedItem.name, panelX + 25, panelY + 45);
-
-      const tagText = selectedItem.type.replace('_', ' ');
-      ctx.font = 'bold 11px Inter, sans-serif';
-      const tagW = ctx.measureText(tagText).width;
-
-      ctx.fillStyle = '#2980b9';
-      ctx.beginPath();
-      ctx.roundRect(panelX + 25, panelY + 62, tagW + 16, 20, 4);
-      ctx.fill();
-
-      ctx.fillStyle = '#ffffff';
-      ctx.fillText(tagText, panelX + 33, panelY + 76);
-
-      ctx.fillStyle = '#ecf0f1';
-      ctx.font = '14px Inter, sans-serif';
-      this.wrapText(ctx, selectedItem.description, panelX + 25, panelY + 115, panelW - 50, 22);
-    } else {
-      ctx.fillStyle = '#4f4f4f';
-      ctx.font = 'italic 15px Inter, sans-serif';
-      ctx.textAlign = 'left';
-      this.wrapText(ctx, 'Select an occupied inventory slot to inspect details.', panelX + 25, panelY + 45, panelW - 50, 22);
-    }
+    // Delegate inspection sub-panel rendering to isolated module handler
+    ItemPreviewRenderer.render(ctx, selectedItem, panelX, panelY, panelW, panelH);
   }
 
   public static addButtons(list: DiepButton[], g: any): void {
@@ -119,24 +87,5 @@ export class InventoryRenderer {
         action: () => { this.selectedIndex = i; }
       });
     }
-  }
-
-  private static wrapText(ctx: CanvasRenderingContext2D, text: string, x: number, y: number, maxWidth: number, lineHeight: number): void {
-    const words = text.split(' ');
-    let line = '';
-
-    for (let n = 0; n < words.length; n++) {
-      const testLine = line + words[n] + ' ';
-      const metrics = ctx.measureText(testLine);
-      const testWidth = metrics.width;
-      if (testWidth > maxWidth && n > 0) {
-        ctx.fillText(line, x, y);
-        line = words[n] + ' ';
-        y += lineHeight;
-      } else {
-        line = testLine;
-      }
-    }
-    ctx.fillText(line, x, y);
   }
 }
